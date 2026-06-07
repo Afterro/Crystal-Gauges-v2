@@ -3,21 +3,30 @@ require("windows.globals")
 function Tacho()
     local self = {}
 
-    local valueRatio = 0
-
+    -- Meta values updated often or car dependant
     self.meta = {
+        -- Startup animtamation
         startup = true,
-        startupTime = .75,
+        -- Duration for startup stages
+        startupStageLenght = .75,
+        -- Current stage time
         startupCurrentTime = 0,
+        -- Modifiers for each stage
         startupModifiers = { 0, 0, 0, 0, 0 },
+        -- Current stage
         startupStage = 1,
 
+        -- Value needle ratio over the whole gauge range
         gaugeValueRatio = .5,
+        -- Max value for this gauge
         maxValue = math.ceil(PlayerCar.rpmLimiter / 1000) * 1000,
+        -- Max display value
         gaugeMaxDisplayValue = math.ceil(PlayerCar.rpmLimiter / 1000),
-        lightBrightness = 0.1
+        -- Light up brightness dependant on the headlights state
+        lightBrightness = 0.1,
+        softLimitRatio = 0
     }
-    self.meta.startupCurrentTime = self.meta.startupTime
+    self.meta.startupCurrentTime = self.meta.startupStageLenght
 
     self.settings = {
         radius = 128,
@@ -43,6 +52,10 @@ function Tacho()
                 offset = -2,
                 width = 2
             },
+            gradient = {
+                width = 48,
+                color = rgb(1, 0, 1)
+            }
         },
         redline = {
             soft = {
@@ -66,6 +79,16 @@ function Tacho()
     local windowSize = vec2()
     local windowCenter = vec2()
     local draw = Draw()
+
+    self.gradientCanvas = draw.GetGradient(
+        self.settings.radius,
+        self.settings.valueRange.begin,
+        self.settings.valueRange.span,
+        self.settings.value.gradient.width,
+        rgb(1, 1, 1),
+        1,
+        "Tacho Gradient"
+    )
 
     local function DrawSpeedAndGear()
         local color = rgbm(1, 1, 1, self.meta.lightBrightness * stages[4])
@@ -135,8 +158,6 @@ function Tacho()
                 )
             end
         end
-
-        ui.popDWriteFont()
     end
 
     local function DrawMileage()
@@ -148,12 +169,12 @@ function Tacho()
         local mileageStr = string.format("%07d", mileage)
 
         local pos = vec2(
-            0, 95
+            0, 90
         )
 
-        local gap = 10
+        local gap = 7
         local fontSize = 12
-        local rectSize = 14
+        local rectSize = 12
 
         local stageColorMod = rgbm(1, 1, 1, stages[5])
 
@@ -164,7 +185,7 @@ function Tacho()
 
             local color = rgbm(1, 1, 1, self.meta.lightBrightness)
             if i == spaces then
-                color = rgbm(1, .5, 0, self.meta.lightBrightness)
+                color = rgbm(.75, 0, .75, self.meta.lightBrightness)
             end
 
             if num == "0" then
@@ -247,33 +268,34 @@ function Tacho()
             self.settings.redline.soft.color * rgbm(1, 1, 1, self.meta.lightBrightness * stages[3])
         )
 
+        local gradientColor = rgbm(
+            self.settings.value.gradient.color.r + self.meta.softLimitRatio,
+            self.settings.value.gradient.color.g - self.meta.softLimitRatio,
+            (self.settings.value.gradient.color.b - self.meta.softLimitRatio),
+            1
+        ) * self.meta.lightBrightness * stages[5]
         -- Value Gradient
-        -- NOTE:
-        -- Highly unoptimised
-        -- Eats from .02 to .1ms render
-        -- I have no idea how else to handle a circular gradient like this one while also being accurate
-        -- Reducing the count of arcs is faster but prodces less accurate gradient
-        -- Quarter of width for count produces best noticeable quality for high width but eats alot
-        -- 1/6 of width is probably best for high width
-        -- Width <= 64, count = width / 3 is imo best
+        ui.beginPremultipliedAlphaTexture()
+        ui.beginTextureShade(self.gradientCanvas)
+        draw.DrawArc(
+            windowCenter,
+            self.settings.valueRange.begin,
+            self.settings.valueRange.span * self.meta.gaugeValueRatio,
+            self.settings.radius * .5,
+            { 0, 0 },
+            self.settings.radius,
+            gradientColor,
+            false
+        )
+        ui.endTextureShade(0, windowSize, true)
+        ui.endPremultipliedAlphaTexture()
 
-        local width = 64
-        local count = width / 3
-        local brightness = .5
-        for i = 1, count, 1 do
-            draw.DrawArc(
-                windowCenter,
-                self.settings.valueRange.begin,
-                self.settings.valueRange.span * self.meta.gaugeValueRatio * stages[4],
-                (self.settings.radius - width * stages[5] * (i / count) / 2),
-                { 0, 0 },
-                width * (i / count) * stages[5],
-                rgbm(1, 0, 1, 1 / count * brightness * self.meta.lightBrightness),
-                false
-            )
-        end
-
-
+        local highlightColor = rgbm(
+            self.settings.value.highlight.color.r + self.meta.softLimitRatio,
+            self.settings.value.highlight.color.g - self.meta.softLimitRatio,
+            self.settings.value.highlight.color.b - self.meta.softLimitRatio,
+            self.settings.value.highlight.color.mult
+        ) * self.meta.lightBrightness
         -- Value Highlight
         draw.DrawArc(
             windowCenter,
@@ -282,7 +304,7 @@ function Tacho()
             (self.settings.radius + self.settings.value.highlight.offset + self.settings.value.highlight.width / 2),
             { 0, 0 },
             self.settings.value.highlight.width,
-            self.settings.value.highlight.color * self.meta.lightBrightness,
+            highlightColor,
             false
         )
 
@@ -292,7 +314,7 @@ function Tacho()
             self.settings.valueRange.begin,
             self.settings.valueRange.span * self.meta.gaugeValueRatio * stages[4],
             (self.settings.radius + self.settings.value.width / 2),
-            { self.settings.value.pinLengths[1] * stages[3], self.settings.value.pinLengths[2] * stages[3] },
+            { self.settings.value.pinLengths[1] * stages[4], self.settings.value.pinLengths[2] * stages[4] },
             self.settings.value.width,
             self.settings.value.color *
             rgbm(1, 1, 1, stages[3])
@@ -302,11 +324,15 @@ function Tacho()
 
         ui.popDWriteFont()
 
-
         ui.pushDWriteFont(
             "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Italic")
 
         DrawRevNums()
+
+        ui.popDWriteFont()
+
+        ui.pushDWriteFont(
+            "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Regular")
 
         DrawMileage()
 
@@ -324,6 +350,9 @@ function Tacho()
         end
 
         self.meta.gaugeValueRatio = PlayerCar.rpm / self.meta.maxValue
+        self.meta.softLimitRatio = (PlayerCar.rpm - PlayerCar.rpmLimiter + self.settings.redline.soft.rpms) /
+            self.settings.redline.soft.rpms
+        self.meta.softLimitRatio = math.clamp(self.meta.softLimitRatio, 0, 1)
     end
 
     local function handleStartup(dt)
@@ -334,14 +363,14 @@ function Tacho()
             self.meta.startupCurrentTime = self.meta.startupCurrentTime - dt
 
             self.meta.startupModifiers[self.meta.startupStage] = 1 -
-                (self.meta.startupCurrentTime / self.meta.startupTime)
+                (self.meta.startupCurrentTime / self.meta.startupStageLenght)
 
             self.meta.startupModifiers[self.meta.startupStage] = math.clamp(
                 self.meta.startupModifiers[self.meta.startupStage], 0, 1)
         else
             if self.meta.startupStage <= #self.meta.startupModifiers then
                 self.meta.startupStage = self.meta.startupStage + 1
-                self.meta.startupCurrentTime = self.meta.startupTime
+                self.meta.startupCurrentTime = self.meta.startupStageLenght
             end
         end
 
@@ -381,8 +410,8 @@ function Tacho()
 
         ac.setWindowSizeConstraints(
             "tacho",
-            vec2(self.settings.radius, self.settings.radius) * 2.25,
-            vec2(self.settings.radius, self.settings.radius) * 2.25
+            vec2(self.settings.radius, self.settings.radius),
+            vec2(self.settings.radius, self.settings.radius)
         )
     end
 

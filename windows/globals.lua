@@ -2,6 +2,7 @@ Sim = ac.getSim()
 PlayerCar = ac.getCar(Sim.focusedCar)
 local numSegments = 64
 
+---Class for drawing gauges
 function Draw()
     local self = {}
 
@@ -21,7 +22,7 @@ function Draw()
     ---Draws an arc from `begin` degrees to `begin + span` degrees
     ---
     ---Used mainly for needles
-    ---@param center vec2 Gauge center
+    ---@param center number|vec2 Gauge center
     ---@param begin number Arc beginning in degrees
     ---@param span number Arc span in degrees
     ---@param radius number Arc radius
@@ -41,9 +42,6 @@ function Draw()
         rounded
     )
         if rounded == nil then rounded = true end
-
-
-        ---- Needle background
 
         -- Pin round
         local pos = vec2(
@@ -121,6 +119,57 @@ function Draw()
             position - textSize / 2,
             color
         )
+    end
+
+    ---Creates a gradient for gauges
+    ---
+    ---Rendered only once
+    ---### PERFORMANCE!!!!!!!1!!1111
+    ---@param resolution number Gauge center
+    ---@param begin number Arc beginning in degrees
+    ---@param span number Arc span in degrees
+    ---@param width number
+    ---@param color rgb Arc color
+    ---@param brightness? number Should ends be rounded, defualt `true`
+    ---@param name? string Name for the gradient
+    function self.GetGradient(
+        resolution,
+        begin,
+        span,
+        width,
+        color,
+        brightness,
+        name
+    )
+        local gradientCanvas = ui.ExtraCanvas(
+            resolution,
+            1,
+            render.AntialiasingMode.none,
+            render.TextureFormat.R8G8B8A8.UNorm
+        )
+
+        local center = resolution / 2
+
+        gradientCanvas:update(function()
+            for i = 1, numSegments, 1 do
+                self.DrawArc(
+                    center,
+                    begin,
+                    span,
+                    resolution / 2 - (width / 2) * (i / numSegments) / 2,
+                    { 0, 0 },
+                    width * (i / numSegments),
+                    rgbm(color.r, color.g, color.b, 1 / numSegments * brightness),
+                    false
+                )
+            end
+        end
+        )
+        if name ~= nil then
+            gradientCanvas:setName(name)
+        end
+
+        return gradientCanvas
     end
 
     return self

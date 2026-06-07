@@ -6,6 +6,13 @@ local numSegments = 64
 function Draw()
     local self = {}
 
+    function self.GetPosRadial(angle, radius)
+        return vec2(
+            math.sin(math.rad(angle)),
+            math.cos(math.rad(angle))
+        ) * radius
+    end
+
     ---Draws a circular gauge background
     ---@param center vec2 Gauge center
     ---@param radius number Background radius

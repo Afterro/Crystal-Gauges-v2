@@ -31,7 +31,7 @@ function Tacho()
     self.settings = {
         radius = 128,
         backgroundColor = rgbm(0, 0, 0, .25),
-        lightsOff = .05,
+        lightsOff = .1,
         lightsOn = 1,
         valueRange = {
             begin = 45,
@@ -39,11 +39,10 @@ function Tacho()
         },
         value = {
             color = rgbm(1, 1, 1, 1),
-            backgroundColor = rgbm(.25, .25, .25, 1),
             pinLengths = { 6, 40 },
             width = 4,
             background = {
-                color = rgbm(.25, .25, .25, 1),
+                color = rgbm(.5, .5, .5, .25),
                 pinLengths = { 6, 10 },
                 width = 4
             },
@@ -53,7 +52,7 @@ function Tacho()
                 width = 2
             },
             gradient = {
-                width = 48,
+                width = 42,
                 color = rgb(1, 0, 1)
             }
         },
@@ -130,6 +129,9 @@ function Tacho()
     end
 
     local function DrawRevNums()
+        ui.pushDWriteFont(
+            "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Italic")
+
         local color = rgbm(1, 1, 1, self.meta.lightBrightness)
 
         local step = 1
@@ -158,57 +160,164 @@ function Tacho()
                 )
             end
         end
+
+        ui.popDWriteFont()
+    end
+
+    local function DrawIndicators()
+        local backgroundColor = rgbm(0, 0, 0, .1 * stages[5] * self.meta.lightBrightness)
+
+        -- High beams indicator
+        local lightsPos = draw.GetPosRadial(0, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local lightsColor = rgbm(0, .25, 1, .5 * stages[5] * self.meta.lightBrightness)
+
+        ui.drawCircleFilled(
+            windowCenter + lightsPos,
+            5,
+            backgroundColor
+        )
+        if PlayerCar.highBeams then
+            ui.drawCircleFilled(
+                windowCenter + lightsPos,
+                5,
+                lightsColor
+            )
+        end
+
+        -- Left turn indicator
+        local lightsPos = draw.GetPosRadial(-7, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local turningColor = rgbm(0, 1, 0, .25 * stages[5])
+
+        ui.drawCircleFilled(
+            windowCenter + lightsPos,
+            5,
+            backgroundColor
+        )
+        if PlayerCar.turningLeftLights and PlayerCar.turningLightsActivePhase then
+            ui.drawCircleFilled(
+                windowCenter + lightsPos,
+                5,
+                turningColor
+            )
+        end
+
+        -- Right turn indicator
+        local lightsPos = draw.GetPosRadial(7, 115 * math.clamp(stages[5] + .75, 0, 1))
+
+        ui.drawCircleFilled(
+            windowCenter + lightsPos,
+            5,
+            backgroundColor
+        )
+        if PlayerCar.turningRightLights and PlayerCar.turningLightsActivePhase then
+            ui.drawCircleFilled(
+                windowCenter + lightsPos,
+                5,
+                turningColor
+            )
+        end
+
+        -- Handbrake indicator
+        local lightsPos = draw.GetPosRadial(14, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local brakeColor = rgbm(1, 1, 0, .5 * stages[5])
+
+        ui.drawCircleFilled(
+            windowCenter + lightsPos,
+            5,
+            backgroundColor
+        )
+        if PlayerCar.fuel / PlayerCar.maxFuel <= .1 then
+            ui.drawCircleFilled(
+                windowCenter + lightsPos,
+                5,
+                brakeColor
+            )
+        end
+
+        -- Handbrake indicator
+        local lightsPos = draw.GetPosRadial(-14, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local brakeColor = rgbm(1, 0, 0, .5 * stages[5])
+
+        ui.drawCircleFilled(
+            windowCenter + lightsPos,
+            5,
+            backgroundColor
+        )
+        if PlayerCar.handbrake > 0 then
+            ui.drawCircleFilled(
+                windowCenter + lightsPos,
+                5,
+                brakeColor
+            )
+        end
     end
 
     local function DrawMileage()
+        ui.pushDWriteFont(ui.DWriteFont("Comfortaa Light", "assets/fonts/Comfortaa-VariableFont_wght.ttf")
+            :weight(600)
+            :style(ui.DWriteFont.Style.Normal)
+        )
+
+        -- Decimal to the last digit for easier handling
         local mileage = PlayerCar.distanceDrivenTotalKm * 10
         if PlayerCar.prefersImperialUnits then
             mileage = mileage * 1.6
         end
-        mileage = math.round(mileage)
-        local mileageStr = string.format("%07d", mileage)
 
-        local pos = vec2(
+        mileage               = math.round(mileage)
+        local mileageStr      = string.format("%07d", mileage)
+        local spaces          = 7
+
+        local position        = vec2(
             0, 90
         )
 
-        local gap = 7
-        local fontSize = 12
-        local rectSize = 12
+        local fontSize        = 14
 
-        local stageColorMod = rgbm(1, 1, 1, stages[5])
+        local gap             = 3
 
-        local spaces = 7
+        local stageColorMod   = rgbm(1, 1, 1, stages[5])
+        local odoColor        = rgbm(1, 1, 1, self.meta.lightBrightness) * stageColorMod
+        local odoColorDecimal = rgbm(1, 0, 1, self.meta.lightBrightness * .75) * stageColorMod
+
+
+        local halfFont     = fontSize / 2
+        local totalNumStep = halfFont + gap
+        local centerOffset = totalNumStep * ((spaces - 1) / 2)
+
+
+        local rectSize = vec2((centerOffset + halfFont) * 2, fontSize)
+        -- Bacakground
+        ui.drawRectFilled(
+            windowCenter - rectSize / 2 + position * math.clamp(stages[5] + .75, 0, 1),
+            windowCenter + rectSize / 2 + vec2(0, 2) + position * math.clamp(stages[5] + .75, 0, 1),
+            self.settings.backgroundColor * .5 * rgbm(1, 1, 1, self.meta.lightBrightness) * stageColorMod,
+            5
+        )
+
+        local zeroes         = true
+        local zeroesAlphaMod = rgbm(1, 1, 1, .25)
+
         for i = 1, spaces, 1 do
             local num = string.sub(mileageStr, i, i)
             if num == "" then num = "0" end
 
-            local color = rgbm(1, 1, 1, self.meta.lightBrightness)
-            if i == spaces then
-                color = rgbm(.75, 0, .75, self.meta.lightBrightness)
-            end
+            local finalColor = odoColor
+            if i == spaces then finalColor = odoColorDecimal end
+            if num ~= "0" then zeroes = false end -- End of trailing zeroes
+            if zeroes then finalColor = finalColor * zeroesAlphaMod end
 
-            if num == "0" then
-                color = color * rgbm(.5, .5, .5, self.meta.lightBrightness)
-            end
-            color = color * stageColorMod
+            local offset = vec2((totalNumStep * (i - 1)) - centerOffset, 0)
 
-            local offset = vec2((fontSize / 2 + gap) * (i - 1) - ((fontSize / 2 + gap) * (spaces - 1)) / 2, 0)
-
-            ui.drawRectFilled(
-                windowCenter + pos * math.clamp(stages[5] + .75, 0, 1) + offset - (rectSize / 2),
-                windowCenter + pos * math.clamp(stages[5] + .75, 0, 1) + offset + (rectSize / 2),
-                self.settings.backgroundColor * rgbm(1, 1, 1, self.meta.lightBrightness) * stageColorMod,
-                2
-            )
-
+            -- Text
             draw.DrawText(
-                windowCenter + pos * math.clamp(stages[5] + .75, 0, 1) + offset,
+                windowCenter + position * math.clamp(stages[5] + .75, 0, 1) + offset,
                 num,
                 fontSize,
-                color
+                finalColor
             )
         end
+        ui.popDWriteFont()
     end
 
     local function DrawGauge()
@@ -230,6 +339,12 @@ function Tacho()
             12,
             rgbm(1, 1, 1, self.meta.lightBrightness * stages[5])
         )
+
+
+        DrawIndicators()
+        DrawSpeedAndGear()
+        DrawRevNums()
+        DrawMileage()
 
         -- Range background
         draw.DrawArc(
@@ -260,7 +375,7 @@ function Tacho()
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
             -self.settings.valueRange.span *
-            ((self.meta.maxValue - PlayerCar.rpmLimiter + self.settings.redline.soft.rpms) / (self.meta.maxValue + self.settings.redline.soft.rpms)) *
+            (self.meta.maxValue - PlayerCar.rpmLimiter + self.settings.redline.soft.rpms) / self.meta.maxValue *
             stages[4],
             (self.settings.radius + self.settings.redline.soft.offset + self.settings.value.background.width / 2),
             { self.settings.redline.soft.pinLengths[1] * stages[4], self.settings.redline.soft.pinLengths[2] * stages[4] },
@@ -308,6 +423,7 @@ function Tacho()
             false
         )
 
+        local valueColorMult = math.clamp(self.meta.lightBrightness, .5, 1)
         -- Value Needle
         draw.DrawArc(
             windowCenter,
@@ -317,26 +433,8 @@ function Tacho()
             { self.settings.value.pinLengths[1] * stages[4], self.settings.value.pinLengths[2] * stages[4] },
             self.settings.value.width,
             self.settings.value.color *
-            rgbm(1, 1, 1, stages[3])
+            rgbm(valueColorMult, valueColorMult, valueColorMult, stages[3])
         )
-
-        DrawSpeedAndGear()
-
-        ui.popDWriteFont()
-
-        ui.pushDWriteFont(
-            "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Italic")
-
-        DrawRevNums()
-
-        ui.popDWriteFont()
-
-        ui.pushDWriteFont(
-            "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Regular")
-
-        DrawMileage()
-
-        ui.popDWriteFont()
     end
 
     local function updateValues()
@@ -352,7 +450,7 @@ function Tacho()
         self.meta.gaugeValueRatio = PlayerCar.rpm / self.meta.maxValue
         self.meta.softLimitRatio = (PlayerCar.rpm - PlayerCar.rpmLimiter + self.settings.redline.soft.rpms) /
             self.settings.redline.soft.rpms
-        self.meta.softLimitRatio = math.clamp(self.meta.softLimitRatio, 0, 1)
+        self.meta.softLimitRatio = math.clamp(self.meta.softLimitRatio * 2, 0, 1)
     end
 
     local function handleStartup(dt)

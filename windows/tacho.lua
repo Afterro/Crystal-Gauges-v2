@@ -395,7 +395,11 @@ function TachoComp()
             gradientColor,
             false
         )
-        ui.endTextureShade(0, windowSize, true)
+        ui.endTextureShade(
+        -- Account for outside padding
+            windowSize.x / 2 - self.settings.radius,
+            windowSize.x - (windowSize.x / 2 - self.settings.radius)
+        )
         ui.endPremultipliedAlphaTexture()
 
 

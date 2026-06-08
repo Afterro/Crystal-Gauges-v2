@@ -194,15 +194,18 @@ function Globals()
             )
 
             local center = resolution / 2
+            width = width / 2
 
             gradientCanvas:update(function()
-                for i = 1, globals.numSegments, 1 do
+                local segments = globals.numSegments
+                local shades = segments
+                for i = 1, shades, 1 do
                     ui.drawCircle(
                         center,
-                        resolution / 2 - (width / 2) * (i / globals.numSegments) / 2,
-                        rgbm(color.r, color.g, color.b, 1 / globals.numSegments * brightness),
-                        globals.numSegments,
-                        width * (i / globals.numSegments)
+                        resolution / 2 - (width / 2) * (i / shades),
+                        rgbm(color.r, color.g, color.b, 1 / shades * brightness),
+                        segments,
+                        width * (i / shades)
                     )
                 end
             end

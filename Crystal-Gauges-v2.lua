@@ -2,9 +2,18 @@
 local globals = require("windows.globals")
 
 local tacho = require("windows.tacho")
+local minimap = require("windows.minimap")
 
 function script.windowTacho(dt)
     tacho.window(dt)
+end
+
+function script.tachoSettings(dt)
+    tacho.settingsWindow(dt)
+end
+
+function script.windowMinimap(dt)
+    minimap.window(dt)
 end
 
 -- -- optional

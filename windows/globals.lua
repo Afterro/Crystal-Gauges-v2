@@ -176,13 +176,11 @@ function Globals()
         ---### PERFORMANCE!!!!!!!1!!1111
         ---@param resolution number
         ---@param width number
-        ---@param color rgb
         ---@param brightness? number
         ---@param name? string Name for the gradient
         function draw.GetGradient(
             resolution,
             width,
-            color,
             brightness,
             name
         )
@@ -203,7 +201,7 @@ function Globals()
                     ui.drawCircle(
                         center,
                         resolution / 2 - (width / 2) * (i / shades),
-                        rgbm(color.r, color.g, color.b, 1 / shades * brightness),
+                        rgbm(1, 1, 1, 1 / shades * brightness),
                         segments,
                         width * (i / shades)
                     )

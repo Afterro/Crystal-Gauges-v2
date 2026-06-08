@@ -5,7 +5,7 @@ if player == nil then
     return
 end
 
-function TachoComp()
+function Tacho()
     local self = {}
 
     -- Meta values updated often or car dependant
@@ -45,13 +45,13 @@ function TachoComp()
                 width = 2
             },
             gradient = {
-                width = 42,
-                color = rgb(1, 0, 1)
+                width = 48,
+                color = rgbm(1, 0, 1, 1)
             }
         },
         redline = {
             soft = {
-                rpms = 1000,
+                rpms = 1500,
                 color = rgbm(1, 0, 0, 1),
                 pinLengths = { 10, 0 },
                 offset = 0,
@@ -75,8 +75,7 @@ function TachoComp()
     self.gradientCanvas = draw.GetGradient(
         self.settings.radius,
         self.settings.value.gradient.width,
-        rgb(1, 1, 1),
-        1,
+        self.settings.value.gradient.color.mult,
         "Tacho Gradient"
     )
 
@@ -210,16 +209,16 @@ function TachoComp()
             )
         end
 
-        -- Handbrake indicator
+        -- Fuel indicator
         local lightsPos = draw.GetPosRadial(14, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
-        local brakeColor = rgbm(1, 1, 0, .5 * stages[5])
+        local brakeColor = rgbm(1, 1, 0, .75 * stages[5])
 
         ui.drawCircleFilled(
             windowCenter + lightsPos,
             5,
             backgroundColor
         )
-        if player.fuel / player.maxFuel <= .1 then
+        if player.fuel / player.maxFuel <= .15 then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -311,6 +310,79 @@ function TachoComp()
             )
         end
         ui.popDWriteFont()
+    end
+
+    local function DrawShiftLights()
+        local radius = 145 * stages[1]
+
+        local rpms = self.settings.redline.soft.rpms
+        local ratio = math.clamp(
+            math.round((player.rpm - player.rpmLimiter + rpms) / rpms + .2, 1),
+            0,
+            1
+        )
+
+        local backgroundColor = rgbm(0, 0, 0, .25 * stages[1] * ratio)
+        local color = rgbm(1, 1, 1, stages[1] * ratio)
+
+        if ratio > .75 then
+            color = rgbm(1, 0, 0, stages[1] * ratio)
+        end
+
+        local begin = -30 / 2
+        local span = 45
+
+        ui.pathArcTo(
+            windowCenter,
+            radius,
+            math.rad(-begin),
+            math.rad(-begin - span),
+            globals.numSegments
+        )
+        ui.pathStroke(
+            backgroundColor,
+            false,
+            10
+        )
+
+        ui.pathArcTo(
+            windowCenter,
+            radius,
+            math.rad(180 + begin),
+            math.rad(180 + begin + span),
+            globals.numSegments
+        )
+        ui.pathStroke(
+            backgroundColor,
+            false,
+            10
+        )
+
+        ui.pathArcTo(
+            windowCenter,
+            radius,
+            math.rad(-begin),
+            math.rad(-begin - span * ratio),
+            globals.numSegments
+        )
+        ui.pathStroke(
+            color,
+            false,
+            10
+        )
+
+        ui.pathArcTo(
+            windowCenter,
+            radius,
+            math.rad(180 + begin),
+            math.rad(180 + begin + span * ratio),
+            globals.numSegments
+        )
+        ui.pathStroke(
+            color,
+            false,
+            10
+        )
     end
 
     local function DrawGauge()
@@ -435,6 +507,8 @@ function TachoComp()
             self.settings.value.color *
             rgbm(valueColorMult, valueColorMult, valueColorMult, stages[3])
         )
+
+        DrawShiftLights()
     end
 
     local function updateValues()
@@ -484,7 +558,11 @@ function TachoComp()
         )
     end
 
+    function self.settingsWindow(dt)
+
+    end
+
     return self
 end
 
-return TachoComp()
+return Tacho()

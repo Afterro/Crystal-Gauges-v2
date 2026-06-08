@@ -1,32 +1,25 @@
-require("windows.globals")
+local globals = require("windows.globals")
+local player = globals.PlayerCar
+if player == nil then
+    ac.debug("ERROR", "No player found in tacho")
+    return
+end
 
-function Tacho()
+function TachoComp()
     local self = {}
 
     -- Meta values updated often or car dependant
     self.meta = {
-        -- Startup animtamation
-        startup = true,
-        -- Duration for startup stages
-        startupStageLenght = .75,
-        -- Current stage time
-        startupCurrentTime = 0,
-        -- Modifiers for each stage
-        startupModifiers = { 0, 0, 0, 0, 0 },
-        -- Current stage
-        startupStage = 1,
-
         -- Value needle ratio over the whole gauge range
         gaugeValueRatio = .5,
         -- Max value for this gauge
-        maxValue = math.ceil(PlayerCar.rpmLimiter / 1000) * 1000,
+        maxValue = math.ceil(player.rpmLimiter / 1000) * 1000,
         -- Max display value
-        gaugeMaxDisplayValue = math.ceil(PlayerCar.rpmLimiter / 1000),
+        gaugeMaxDisplayValue = math.ceil(player.rpmLimiter / 1000),
         -- Light up brightness dependant on the headlights state
         lightBrightness = 0.1,
         softLimitRatio = 0
     }
-    self.meta.startupCurrentTime = self.meta.startupStageLenght
 
     self.settings = {
         radius = 128,
@@ -77,12 +70,10 @@ function Tacho()
 
     local windowSize = vec2()
     local windowCenter = vec2()
-    local draw = Draw()
+    local draw = globals.draw
 
     self.gradientCanvas = draw.GetGradient(
         self.settings.radius,
-        self.settings.valueRange.begin,
-        self.settings.valueRange.span,
         self.settings.value.gradient.width,
         rgb(1, 1, 1),
         1,
@@ -93,9 +84,9 @@ function Tacho()
         local textColor = rgbm(1, 1, 1, self.meta.lightBrightness * stages[4])
         local barColor = rgbm(1, 1, 1, self.meta.lightBrightness * stages[3])
 
-        local speed = math.round(PlayerCar.poweredWheelsSpeed)
-        if PlayerCar.prefersImperialUnits then
-            speed = math.round(PlayerCar.poweredWheelsSpeed / 1.6)
+        local speed = math.round(player.poweredWheelsSpeed)
+        if player.prefersImperialUnits then
+            speed = math.round(player.poweredWheelsSpeed / 1.6)
         end
 
         draw.DrawText(
@@ -113,7 +104,7 @@ function Tacho()
 
         )
 
-        local gearNum = math.round(PlayerCar.engagedGear)
+        local gearNum = math.round(player.engagedGear)
         local gear = stringify(gearNum)
         if gearNum == 0 then
             gear = "N"
@@ -153,7 +144,7 @@ function Tacho()
             draw.DrawText(pos, stringify(i), 16,
                 color * rgbm(1, 1, 1, stages[3]))
 
-            if PlayerCar.headlightsActive then
+            if player.headlightsActive then
                 ui.glowCircleFilled(
                     pos,
                     8,
@@ -178,7 +169,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if PlayerCar.highBeams then
+        if player.highBeams then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -195,7 +186,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if PlayerCar.turningLeftLights and PlayerCar.turningLightsActivePhase then
+        if player.turningLeftLights and player.turningLightsActivePhase then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -211,7 +202,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if PlayerCar.turningRightLights and PlayerCar.turningLightsActivePhase then
+        if player.turningRightLights and player.turningLightsActivePhase then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -228,7 +219,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if PlayerCar.fuel / PlayerCar.maxFuel <= .1 then
+        if player.fuel / player.maxFuel <= .1 then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -245,7 +236,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if PlayerCar.handbrake > 0 then
+        if player.handbrake > 0 then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -261,8 +252,8 @@ function Tacho()
         )
 
         -- Decimal to the last digit for easier handling
-        local mileage = PlayerCar.distanceDrivenTotalKm * 10
-        if PlayerCar.prefersImperialUnits then
+        local mileage = player.distanceDrivenTotalKm * 10
+        if player.prefersImperialUnits then
             mileage = mileage * 1.6
         end
 
@@ -332,7 +323,7 @@ function Tacho()
             "Varien:assets/fonts/Varien.ttf;Weight=400;Style=Regular")
 
         local speedSystem = "KM/H"
-        if PlayerCar.prefersImperialUnits then
+        if player.prefersImperialUnits then
             speedSystem = "MPH"
         end
         draw.DrawText(
@@ -345,7 +336,6 @@ function Tacho()
 
         DrawIndicators()
         DrawSpeedAndGear()
-        DrawRevNums()
         DrawMileage()
 
         -- Range background
@@ -364,7 +354,7 @@ function Tacho()
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
-            -self.settings.valueRange.span * ((self.meta.maxValue - PlayerCar.rpmLimiter) / self.meta.maxValue) *
+            -self.settings.valueRange.span * ((self.meta.maxValue - player.rpmLimiter) / self.meta.maxValue) *
             stages[4],
             (self.settings.radius + self.settings.redline.hard.offset + self.settings.value.background.width / 2),
             { self.settings.redline.hard.pinLengths[1] * stages[4], self.settings.redline.hard.pinLengths[2] * stages[5] },
@@ -377,7 +367,7 @@ function Tacho()
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
             -self.settings.valueRange.span *
-            (self.meta.maxValue - PlayerCar.rpmLimiter + self.settings.redline.soft.rpms) / self.meta.maxValue *
+            (self.meta.maxValue - player.rpmLimiter + self.settings.redline.soft.rpms) / self.meta.maxValue *
             stages[4],
             (self.settings.radius + self.settings.redline.soft.offset + self.settings.value.background.width / 2),
             { self.settings.redline.soft.pinLengths[1] * stages[4], self.settings.redline.soft.pinLengths[2] * stages[4] },
@@ -391,6 +381,7 @@ function Tacho()
             (self.settings.value.gradient.color.b - self.meta.softLimitRatio),
             1
         ) * self.meta.lightBrightness * stages[5]
+
         -- Value Gradient
         ui.beginPremultipliedAlphaTexture()
         ui.beginTextureShade(self.gradientCanvas)
@@ -406,6 +397,9 @@ function Tacho()
         )
         ui.endTextureShade(0, windowSize, true)
         ui.endPremultipliedAlphaTexture()
+
+
+        DrawRevNums()
 
         local highlightColor = rgbm(
             self.settings.value.highlight.color.r + self.meta.softLimitRatio,
@@ -443,57 +437,28 @@ function Tacho()
         windowSize = ui.windowSize()
         windowCenter = windowSize / 2
 
-        if PlayerCar.headlightsActive then
+        if player.headlightsActive then
             self.meta.lightBrightness = self.settings.lightsOn
         else
             self.meta.lightBrightness = self.settings.lightsOff
         end
 
-        self.meta.gaugeValueRatio = PlayerCar.rpm / self.meta.maxValue
-        self.meta.softLimitRatio = (PlayerCar.rpm - PlayerCar.rpmLimiter + self.settings.redline.soft.rpms) /
+        self.meta.gaugeValueRatio = player.rpm / self.meta.maxValue
+        self.meta.softLimitRatio = (player.rpm - player.rpmLimiter + self.settings.redline.soft.rpms) /
             self.settings.redline.soft.rpms
         self.meta.softLimitRatio = math.clamp(self.meta.softLimitRatio * 2, 0, 1)
     end
 
-    local function handleStartup(dt)
-        -- If player is in setup screen
-        if Sim.cameraMode == ac.CameraMode.Start then return end
-
-        if self.meta.startupStage <= #self.meta.startupModifiers and self.meta.startupCurrentTime > 0 then
-            self.meta.startupCurrentTime = self.meta.startupCurrentTime - dt
-
-            self.meta.startupModifiers[self.meta.startupStage] = 1 -
-                (self.meta.startupCurrentTime / self.meta.startupStageLenght)
-
-            self.meta.startupModifiers[self.meta.startupStage] = math.clamp(
-                self.meta.startupModifiers[self.meta.startupStage], 0, 1)
-        else
-            if self.meta.startupStage <= #self.meta.startupModifiers then
-                self.meta.startupStage = self.meta.startupStage + 1
-                self.meta.startupCurrentTime = self.meta.startupStageLenght
-            end
-        end
-
-        if self.meta.startupStage > #self.meta.startupModifiers
-        then
-            self.meta.startup = false
-        end
-    end
-
     function self.window(dt)
         stages = {
-            self.meta.startupModifiers[1],
-            self.meta.startupModifiers[2],
-            self.meta.startupModifiers[3],
-            self.meta.startupModifiers[4],
-            self.meta.startupModifiers[5]
+            globals.draw.startup.startupModifiers[1],
+            globals.draw.startup.startupModifiers[2],
+            globals.draw.startup.startupModifiers[3],
+            globals.draw.startup.startupModifiers[4],
+            globals.draw.startup.startupModifiers[5]
         }
 
         updateValues()
-
-        if self.meta.startup then
-            handleStartup(dt)
-        end
 
         if ui.windowHovered() then
             ui.drawRect(vec2(0, 0),
@@ -518,4 +483,4 @@ function Tacho()
     return self
 end
 
-return Tacho()
+return TachoComp()

@@ -1,5 +1,5 @@
 -- Instanciate gauges
-require("windows.globals")
+local globals = require("windows.globals")
 
 local tacho = require("windows.tacho")
 
@@ -14,5 +14,5 @@ end
 
 -- optional, standard available function
 function script.update(dt)
-    PlayerCar = ac.getCar(Sim.focusedCar)
+    globals.draw.update(dt)
 end

@@ -90,7 +90,8 @@ function Tacho()
     )
 
     local function DrawSpeedAndGear()
-        local color = rgbm(1, 1, 1, self.meta.lightBrightness * stages[4])
+        local textColor = rgbm(1, 1, 1, self.meta.lightBrightness * stages[4])
+        local barColor = rgbm(1, 1, 1, self.meta.lightBrightness * stages[3])
 
         local speed = math.round(PlayerCar.poweredWheelsSpeed)
         if PlayerCar.prefersImperialUnits then
@@ -101,13 +102,13 @@ function Tacho()
             windowCenter + vec2(0, -32) * math.clamp(stages[4] + .75, 0, 1),
             stringify(speed),
             54,
-            color
+            textColor
         )
 
         ui.drawEllipseFilled(
             windowCenter,
-            vec2(54 * stages[4], 1.5),
-            color,
+            vec2(54 * stages[3], 1.5),
+            barColor,
             54
 
         )
@@ -124,7 +125,7 @@ function Tacho()
             windowCenter + vec2(0, 26) * math.clamp(stages[4] + .75, 0, 1),
             gear,
             42,
-            color
+            textColor
         )
     end
 
@@ -166,9 +167,10 @@ function Tacho()
 
     local function DrawIndicators()
         local backgroundColor = rgbm(0, 0, 0, .1 * stages[5] * self.meta.lightBrightness)
+        local indicatorsRadius = 115
 
         -- High beams indicator
-        local lightsPos = draw.GetPosRadial(0, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local lightsPos = draw.GetPosRadial(0, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
         local lightsColor = rgbm(0, .25, 1, .5 * stages[5] * self.meta.lightBrightness)
 
         ui.drawCircleFilled(
@@ -185,7 +187,7 @@ function Tacho()
         end
 
         -- Left turn indicator
-        local lightsPos = draw.GetPosRadial(-7, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local lightsPos = draw.GetPosRadial(-7, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
         local turningColor = rgbm(0, 1, 0, .25 * stages[5])
 
         ui.drawCircleFilled(
@@ -202,7 +204,7 @@ function Tacho()
         end
 
         -- Right turn indicator
-        local lightsPos = draw.GetPosRadial(7, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local lightsPos = draw.GetPosRadial(7, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
 
         ui.drawCircleFilled(
             windowCenter + lightsPos,
@@ -218,7 +220,7 @@ function Tacho()
         end
 
         -- Handbrake indicator
-        local lightsPos = draw.GetPosRadial(14, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local lightsPos = draw.GetPosRadial(14, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
         local brakeColor = rgbm(1, 1, 0, .5 * stages[5])
 
         ui.drawCircleFilled(
@@ -235,7 +237,7 @@ function Tacho()
         end
 
         -- Handbrake indicator
-        local lightsPos = draw.GetPosRadial(-14, 115 * math.clamp(stages[5] + .75, 0, 1))
+        local lightsPos = draw.GetPosRadial(-14, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
         local brakeColor = rgbm(1, 0, 0, .5 * stages[5])
 
         ui.drawCircleFilled(

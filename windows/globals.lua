@@ -159,15 +159,12 @@ function Draw()
 
         gradientCanvas:update(function()
             for i = 1, numSegments, 1 do
-                self.DrawArc(
+                ui.drawCircle(
                     center,
-                    begin,
-                    span,
                     resolution / 2 - (width / 2) * (i / numSegments) / 2,
-                    { 0, 0 },
-                    width * (i / numSegments),
                     rgbm(color.r, color.g, color.b, 1 / numSegments * brightness),
-                    false
+                    numSegments,
+                    width * (i / numSegments)
                 )
             end
         end

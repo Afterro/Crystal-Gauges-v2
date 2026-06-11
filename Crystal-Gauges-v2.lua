@@ -16,9 +16,9 @@ function script.windowMinimap(dt)
     minimap.window(dt)
 end
 
--- -- optional
+-- optional
 -- function script.Draw3D(dt)
---     -- draw something with the render. functions
+
 -- end
 
 -- optional, standard available function

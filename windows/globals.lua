@@ -1,7 +1,7 @@
 function Globals()
     local globals = {}
     globals.Sim = ac.getSim()
-    globals.PlayerCar = ac.getCar(globals.Sim.focusedCar)
+    globals.focusedCar = ac.getCar(globals.Sim.focusedCar)
     globals.numSegments = 64
 
     ---Class for drawing gauges

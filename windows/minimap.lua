@@ -1,8 +1,8 @@
 local globals = require("windows.globals")
 local sim = globals.Sim
-local player = globals.PlayerCar
-if player == nil then
-    ac.debug("ERROR", "No player found in tacho")
+local focusedCar = globals.focusedCar
+if focusedCar == nil then
+    ac.debug("ERROR", "No focused car found for minimap")
     return
 end
 
@@ -13,8 +13,11 @@ function Minimap()
     local trackData
     local trackCanvas
     local splineCanvas
+    local mapCentredCanvas
     local displayZoom = 3
     local carScale = 1
+    local focusedCarCamRotation = 0
+    local splineResolutionMultiplier = 3
 
     local function GetTrackData()
         local track = {
@@ -36,7 +39,6 @@ function Minimap()
         if track.size.y > track.maxSize then
             track.maxSize = track.size.y
         end
-        ac.debug("Data", track)
 
         return track
     end
@@ -51,7 +53,7 @@ function Minimap()
     end
 
     local function GenerateTrackSplineCanvas()
-        local res = trackData.maxSize * trackData.config.SCALE_FACTOR
+        local res = trackData.maxSize * trackData.config.SCALE_FACTOR * splineResolutionMultiplier
         local detail = 1000
         local canvas = ui.ExtraCanvas(res)
         canvas:setName("AI Spline")
@@ -59,17 +61,16 @@ function Minimap()
             for i = 1, detail, 1 do
                 local pos3 = ac.trackProgressToWorldCoordinate(i / detail, true)
                 local pos2 = vec2(pos3.x, pos3.z) + trackData.offset
-                ui.pathLineTo(pos2)
+                ui.pathLineTo(pos2 * splineResolutionMultiplier)
             end
-            ui.pathStroke(rgbm(0, 0, 0, .25), true, trackData.config.DRAWING_SIZE)
+            ui.pathStroke(rgbm(0, 0, 0, 1), true, trackData.config.DRAWING_SIZE * splineResolutionMultiplier * 1.25)
 
-            -- for i = 1, detail, 1 do
-            --     local pos3 = ac.trackProgressToWorldCoordinate(i / detail, true)
-            --     local pos2 = vec2(pos3.x, pos3.z) + trackData.offset
-            --     ui.pathLineTo(pos2)
-            -- end
-
-            -- ui.pathStroke(rgbm(0, 1, 0, 1), true, 2)
+            for i = 1, detail, 1 do
+                local pos3 = ac.trackProgressToWorldCoordinate(i / detail, true)
+                local pos2 = vec2(pos3.x, pos3.z) + trackData.offset
+                ui.pathLineTo(pos2 * splineResolutionMultiplier)
+            end
+            ui.pathStroke(rgbm(1, 1, 1, 1), true, trackData.config.DRAWING_SIZE * splineResolutionMultiplier)
         end)
         return canvas
     end
@@ -80,10 +81,6 @@ function Minimap()
     local function DrawCar(car, offset)
         if not car.isActive then return end
         if offset == nil then offset = 0 end
-
-        local collider = ac.getCarColliders(car.index, true)[1]
-        local carSize = vec2(collider.position.x, collider.position.z) +
-            vec2(collider.size.x, collider.size.z) / 2 * displayZoom * carScale
 
         local carPos = (vec2(car.position.x, car.position.z) + trackData.offset) * displayZoom + offset
         local carRotation = math.deg(math.atan2(car.look.x, car.look.z))
@@ -100,49 +97,98 @@ function Minimap()
             color = rgbm(1, 0, 1, 1)
         end
 
+        local colliders = ac.getCarColliders(car.index, true)
+
+        ui.beginOutline()
+        ui.beginRotation()
+        for index, value in ipairs(colliders) do
+            local collider = value
+
+            local carSize = vec2(collider.position.x, collider.position.z) +
+                vec2(collider.size.x, collider.size.z) / 2 * displayZoom * carScale
+
+            ui.drawRectFilled(
+                carPos - carSize,
+                carPos + carSize,
+                color
+            )
+        end
+
+        ui.endRotation(carRotation - 90)
+
+        ui.endOutline(rgbm(0, 0, 0, 1), 1)
+
+        if car.index == focusedCar.index then return end
+
+        local nameOffset = vec2(0, 10)
+
         ui.beginRotation()
         ui.beginOutline()
-        ui.drawRectFilled(
-            carPos - carSize,
-            carPos + carSize,
-            color
-        )
+
+        globals.draw.DrawText(carPos + nameOffset, car:driverName():split(" ")[1], 10, rgbm(1, 1, 1, 1))
+
         ui.endOutline(rgbm(0, 0, 0, 1), 1)
-        ui.endRotation(carRotation - 90)
+        ui.endPivotRotation(focusedCarCamRotation - 90, carPos)
     end
 
     local function DrawMapCentred()
         local windowCenter = ui.windowSize() / 2
 
-        local playerMapPos = vec2(player.position.x, player.position.z) + trackData.offset
-        local trackDrawPos = (windowCenter - playerMapPos / trackData.config.SCALE_FACTOR * displayZoom)
+        local playerMapPos = vec2(focusedCar.position.x, focusedCar.position.z) + trackData.offset
+        local trackDrawPos = windowCenter - playerMapPos / trackData.config.SCALE_FACTOR * displayZoom
 
-        local rotation = math.deg(math.atan2(player.look.x, player.look.z))
+        local camForward = ac.getCameraForward()
+        focusedCarCamRotation = math.deg(math.atan2(camForward.x, camForward.z))
 
         ui.beginRotation()
+
+
         if splineCanvas ~= nil then
             ui.drawImage(splineCanvas, trackDrawPos,
-                trackDrawPos + splineCanvas:size() * displayZoom)
+                trackDrawPos + splineCanvas:size() / splineResolutionMultiplier * displayZoom)
+        else
+            ui.drawImage(trackCanvas, trackDrawPos,
+                trackDrawPos + trackCanvas:size() * displayZoom)
         end
-        ui.drawImage(trackCanvas, trackDrawPos,
-            trackDrawPos + trackCanvas:size() * displayZoom)
-        for i, car in ac.iterateCars() do
+        ui.pushDWriteFont(
+            "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=Regular;Style=Regular")
+        for _, car in ac.iterateCars() do
             DrawCar(car, trackDrawPos)
         end
-        ui.endPivotRotation(-rotation - 90, windowCenter)
+        ui.popDWriteFont()
+        ui.endPivotRotation(-focusedCarCamRotation - 90, windowCenter)
     end
 
     function self.window(dt)
         local windowCenter = ui.windowSize() / 2
-        ac.debug("Colliders",
-            ac.getCarColliders(0, true))
+
+        if mapCentredCanvas == nil then
+            mapCentredCanvas = ui.ExtraCanvas(windowCenter * 2)
+        end
+
+        mapCentredCanvas:clear()
+        mapCentredCanvas:update(DrawMapCentred)
 
         globals.draw.Background(windowCenter, 128, rgbm(0, 0, 0, .25))
-        ui.beginTextureShade(ui.ExtraCanvas(windowCenter * 2):update(DrawMapCentred))
-        ui.drawCircleFilled(windowCenter, 128, rgbm(1, 1, 1, 1), globals.numSegments)
+
+        ui.beginTextureShade(mapCentredCanvas)
+        ui.drawCircleFilled(windowCenter, 124, rgbm(1, 1, 1, 1), globals.numSegments)
         ui.endTextureShade(0, windowCenter * 2)
 
+
+
         if ui.windowHovered() then
+            local scroll = ui.mouseWheel()
+            if ui.keyboardButtonDown(ui.KeyIndex.LeftShift) then
+                carScale = carScale + scroll * .25
+                carScale = math.clamp(carScale, .25, 20)
+                ui.text("Car scale: " .. stringify(carScale))
+            else
+                displayZoom = displayZoom + ui.mouseWheel() * .25
+                displayZoom = math.clamp(displayZoom, .25, 20)
+                ui.text("Zoom: " .. stringify(displayZoom))
+            end
+
             ui.drawRect(vec2(0, 0),
                 windowCenter * 2,
                 rgbm(1, 1, 1, 1),
@@ -157,6 +203,7 @@ function Minimap()
         trackData = GetTrackData()
         trackCanvas = GenerateTrackCanvas(trackData)
 
+        -- Check if there even is an AI spline
         if ac.trackProgressToWorldCoordinate(.5, true).x ~= -1 then
             splineCanvas = GenerateTrackSplineCanvas()
         end

@@ -1,6 +1,6 @@
 local globals = require("windows.globals")
-local player = globals.PlayerCar
-if player == nil then
+local focusedCar = globals.focusedCar
+if focusedCar == nil then
     ac.debug("ERROR", "No player found in tacho")
     return
 end
@@ -13,9 +13,9 @@ function Tacho()
         -- Value needle ratio over the whole gauge range
         gaugeValueRatio = .5,
         -- Max value for this gauge
-        maxValue = math.ceil(player.rpmLimiter / 1000) * 1000,
+        maxValue = math.ceil(focusedCar.rpmLimiter / 1000) * 1000,
         -- Max display value
-        gaugeMaxDisplayValue = math.ceil(player.rpmLimiter / 1000),
+        gaugeMaxDisplayValue = math.ceil(focusedCar.rpmLimiter / 1000),
         -- Light up brightness dependant on the headlights state
         lightBrightness = 0.1,
         softLimitRatio = 0
@@ -83,9 +83,9 @@ function Tacho()
         local textColor = rgbm(1, 1, 1, self.meta.lightBrightness * stages[4])
         local barColor = rgbm(1, 1, 1, self.meta.lightBrightness * stages[3])
 
-        local speed = math.round(player.poweredWheelsSpeed)
-        if player.prefersImperialUnits then
-            speed = math.round(player.poweredWheelsSpeed / 1.6)
+        local speed = math.round(focusedCar.poweredWheelsSpeed)
+        if focusedCar.prefersImperialUnits then
+            speed = math.round(focusedCar.poweredWheelsSpeed / 1.6)
         end
 
         draw.DrawText(
@@ -103,7 +103,7 @@ function Tacho()
 
         )
 
-        local gearNum = math.round(player.engagedGear)
+        local gearNum = math.round(focusedCar.engagedGear)
         local gear = stringify(gearNum)
         if gearNum == 0 then
             gear = "N"
@@ -143,7 +143,7 @@ function Tacho()
             draw.DrawText(pos, stringify(i), 16,
                 color * rgbm(1, 1, 1, stages[3]))
 
-            if player.headlightsActive then
+            if focusedCar.headlightsActive then
                 ui.glowCircleFilled(
                     pos,
                     8,
@@ -168,7 +168,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if player.highBeams then
+        if focusedCar.highBeams then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -185,7 +185,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if player.turningLeftLights and player.turningLightsActivePhase then
+        if focusedCar.turningLeftLights and focusedCar.turningLightsActivePhase then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -201,7 +201,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if player.turningRightLights and player.turningLightsActivePhase then
+        if focusedCar.turningRightLights and focusedCar.turningLightsActivePhase then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -218,7 +218,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if player.fuel / player.maxFuel <= .15 then
+        if focusedCar.fuel / focusedCar.maxFuel <= .15 then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -235,7 +235,7 @@ function Tacho()
             5,
             backgroundColor
         )
-        if player.handbrake > 0 then
+        if focusedCar.handbrake > 0 then
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 5,
@@ -251,8 +251,8 @@ function Tacho()
         )
 
         -- Decimal to the last digit for easier handling
-        local mileage = player.distanceDrivenTotalKm * 10
-        if player.prefersImperialUnits then
+        local mileage = focusedCar.distanceDrivenTotalKm * 10
+        if focusedCar.prefersImperialUnits then
             mileage = mileage * 1.6
         end
 
@@ -317,7 +317,7 @@ function Tacho()
 
         local rpms = self.settings.redline.soft.rpms
         local ratio = math.clamp(
-            math.round((player.rpm - player.rpmLimiter + rpms) / rpms + .2, 1),
+            math.round((focusedCar.rpm - focusedCar.rpmLimiter + rpms) / rpms + .2, 1),
             0,
             1
         )
@@ -395,7 +395,7 @@ function Tacho()
             "Varien:assets/fonts/Varien.ttf;Weight=400;Style=Regular")
 
         local speedSystem = "KM/H"
-        if player.prefersImperialUnits then
+        if focusedCar.prefersImperialUnits then
             speedSystem = "MPH"
         end
         draw.DrawText(
@@ -426,7 +426,7 @@ function Tacho()
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
-            -self.settings.valueRange.span * ((self.meta.maxValue - player.rpmLimiter) / self.meta.maxValue) *
+            -self.settings.valueRange.span * ((self.meta.maxValue - focusedCar.rpmLimiter) / self.meta.maxValue) *
             stages[4],
             (self.settings.radius + self.settings.redline.hard.offset + self.settings.value.background.width / 2),
             { self.settings.redline.hard.pinLengths[1] * stages[4], self.settings.redline.hard.pinLengths[2] * stages[5] },
@@ -439,7 +439,7 @@ function Tacho()
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
             -self.settings.valueRange.span *
-            (self.meta.maxValue - player.rpmLimiter + self.settings.redline.soft.rpms) / self.meta.maxValue *
+            (self.meta.maxValue - focusedCar.rpmLimiter + self.settings.redline.soft.rpms) / self.meta.maxValue *
             stages[4],
             (self.settings.radius + self.settings.redline.soft.offset + self.settings.value.background.width / 2),
             { self.settings.redline.soft.pinLengths[1] * stages[4], self.settings.redline.soft.pinLengths[2] * stages[4] },
@@ -515,14 +515,14 @@ function Tacho()
         windowSize = ui.windowSize()
         windowCenter = windowSize / 2
 
-        if player.headlightsActive then
+        if focusedCar.headlightsActive then
             self.meta.lightBrightness = self.settings.lightsOn
         else
             self.meta.lightBrightness = self.settings.lightsOff
         end
 
-        self.meta.gaugeValueRatio = player.rpm / self.meta.maxValue
-        self.meta.softLimitRatio = (player.rpm - player.rpmLimiter + self.settings.redline.soft.rpms) /
+        self.meta.gaugeValueRatio = focusedCar.rpm / self.meta.maxValue
+        self.meta.softLimitRatio = (focusedCar.rpm - focusedCar.rpmLimiter + self.settings.redline.soft.rpms) /
             self.settings.redline.soft.rpms
         self.meta.softLimitRatio = math.clamp(self.meta.softLimitRatio * 2, 0, 1)
     end

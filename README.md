@@ -5,6 +5,24 @@ Rewritten for better scalability and new functions such as startup animations, g
 
 > No settings options are currently available ingame
 
+# Previews
+> S15 Silvia by [Jugee8](https://jugee8.gumroad.com/)
+  <img width="960" height="540" alt="nightrunning" src="https://github.com/user-attachments/assets/4e6e31e7-3931-4641-b3bd-d195f929e573" />
+  <details>
+  <summary>Light dependant transparency</summary>
+      Night - Lights off
+    <img width="960" height="540" alt="night" src="https://github.com/user-attachments/assets/7dbb8eaa-e818-470c-bb1e-083a2f516d92" /> <br>
+      Night - lights on
+    <img width="960" height="540" alt="night-lights" src="https://github.com/user-attachments/assets/3d1ad4f0-c6cb-4e9d-be0c-e84800d7bc4e" /> <br>
+      Day - Lights off
+    <img width="1280" height="720" alt="day" src="https://github.com/user-attachments/assets/89b87d4a-4af7-4e7e-91bf-ac5300bdd7bc" />
+  </details>
+  <details>
+  <summary>Instruments</summary>
+    <img width="1280" height="720" alt="instruments" src="https://github.com/user-attachments/assets/dbfbcbfe-31d9-44e1-b5fc-60ac1c7ff5fc" />
+      Handbrake, indicators, high beams, low fuel
+  </details>
+
 # Future plans
 
 > Even though an app is done, doesn't mean it won't be updated. If I come up with something cool, I'll add it.

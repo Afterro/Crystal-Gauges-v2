@@ -2,6 +2,7 @@ function Globals()
     local globals = {}
     globals.Sim = ac.getSim()
     globals.focusedCar = ac.getCar(globals.Sim.focusedCar)
+
     globals.numSegments = 64
 
     globals.lightBrightness = 0.1
@@ -79,12 +80,15 @@ function Globals()
         ---@param p2 vec2|number Background radius
         ---@param color rgbm Background color
         ---@param rounding number
-        function draw.RectBackground(p1, p2, color, rounding)
+        ---@param roundingFlags? ui.CornerFlags
+        function draw.RectBackground(p1, p2, color, rounding, roundingFlags)
+            if roundingFlags == nil then roundingFlags = ui.CornerFlags.All end
             ui.drawRectFilled(
                 p1,
                 p2,
                 color,
-                rounding
+                rounding,
+                roundingFlags
             )
         end
 

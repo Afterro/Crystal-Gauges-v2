@@ -1,5 +1,4 @@
 local globals = require("windows.globals")
-local sim = globals.Sim
 local focusedCar = globals.focusedCar
 if focusedCar == nil then
     ac.debug("ERROR", "No focused car found for minimap")
@@ -14,10 +13,11 @@ function Minimap()
     local trackCanvas
     local splineCanvas
     local mapCentredCanvas
-    local displayZoom = .75
+    local displayZoom = .5
     local carScale = .75
     local focusedCarScale = 1
     local focusedCarCamRotation = 0
+    local nameScale = 1
     local splineResolutionMultiplier = 1
 
     local function GetTrackData()
@@ -117,7 +117,8 @@ function Minimap()
         ui.beginRotation()
         ui.beginOutline()
 
-        globals.draw.DrawText(carPos + nameOffset, car:driverName():split(" ")[1], 10, rgbm(1, 1, 1, 1))
+        globals.draw.DrawText(carPos + nameOffset * nameScale, car:driverName():split(" ")[1], 10 * nameScale,
+            rgbm(1, 1, 1, 1))
 
         ui.endOutline(rgbm(0, 0, 0, 1), 1)
         ui.endPivotRotation(focusedCarCamRotation - 90, carPos)
@@ -168,11 +169,14 @@ function Minimap()
         mapCentredCanvas:clear()
         mapCentredCanvas:update(DrawMapCentred)
 
-        globals.draw.RoundBackground(windowCenter, windowCenter.x, rgbm(0, 0, 0, .125))
-        globals.draw.RoundBackground(windowCenter, windowCenter.x - 4, rgbm(0, 0, 0, .125))
+        globals.draw.RoundBackground(windowCenter, windowCenter.x * globals.draw.startup.startupModifiers[1],
+            rgbm(0, 0, 0, .125))
+        globals.draw.RoundBackground(windowCenter, (windowCenter.x - 4) * globals.draw.startup.startupModifiers[2],
+            rgbm(0, 0, 0, .125))
 
         ui.beginTextureShade(mapCentredCanvas)
-        ui.drawCircleFilled(windowCenter, windowCenter.x - 4, rgbm(1, 1, 1, 1 * globals.lightBrightness),
+        ui.drawCircleFilled(windowCenter, (windowCenter.x - 4) * globals.draw.startup.startupModifiers[3],
+            rgbm(1, 1, 1, 1 * globals.lightBrightness),
             globals.numSegments)
         ui.endTextureShade(0, windowCenter * 2)
 
@@ -180,10 +184,18 @@ function Minimap()
 
         if ui.windowHovered() then
             local scroll = ui.mouseWheel()
-            if ui.keyboardButtonDown(ui.KeyIndex.LeftShift) then
+            if ui.keyboardButtonDown(ui.KeyIndex.LeftShift) and ui.keyboardButtonDown(ui.KeyIndex.LeftControl) then
+                nameScale = nameScale + scroll * .25
+                nameScale = math.clamp(nameScale, .25, 20)
+                ui.text("Name scale: " .. stringify(nameScale))
+            elseif ui.keyboardButtonDown(ui.KeyIndex.LeftShift) then
                 carScale = carScale + scroll * .25
                 carScale = math.clamp(carScale, .25, 20)
-                ui.text("Car scale: " .. stringify(carScale))
+                ui.text("Other car scale: " .. stringify(carScale))
+            elseif ui.keyboardButtonDown(ui.KeyIndex.LeftControl) then
+                focusedCarScale = focusedCarScale + scroll * .25
+                focusedCarScale = math.clamp(focusedCarScale, .25, 20)
+                ui.text("Focused car scale: " .. stringify(focusedCarScale))
             else
                 displayZoom = displayZoom + ui.mouseWheel() * .25
                 displayZoom = math.clamp(displayZoom, .25, 20)

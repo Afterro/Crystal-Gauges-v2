@@ -2,7 +2,7 @@ local globals = require("windows.globals")
 local sim = globals.Sim
 local focusedCar = globals.focusedCar
 if focusedCar == nil then
-    ac.debug("ERROR", "No focused car found for minimap")
+    ac.debug("ERROR", "No focused car found for media")
     return
 end
 
@@ -29,19 +29,23 @@ function Minimap()
             rgbm(1, 1, 1, 1),
             vec2(0, .5)
         )
+
         globals.draw.DrawText(
-            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 8),
+            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5),
             currentlyPlaying.artist,
-            12,
+            10,
             rgbm(1, 1, 1, 1),
             vec2(0, .5)
         )
 
-        ui.drawImage(currentlyPlaying, 0, windowCenter.y * 2)
         ui.popDWriteFont()
 
+        ui.beginTextureShade(currentlyPlaying)
+        globals.draw.RectBackground(0, windowCenter.y * 2, rgbm(1, 1, 1, 1), settings.rounding, ui.CornerFlags.Left)
+        ui.endTextureShade(0, windowCenter.y * 2, true)
+
         ui.drawRectFilled(
-            windowCenter.y * 2 - vec2(0, 2),
+            windowCenter.y * 2 - vec2(0, 3),
             windowCenter.y * 2 +
             vec2((currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) * windowCenter.x, 0),
             rgbm(1, 0, 1, 1)

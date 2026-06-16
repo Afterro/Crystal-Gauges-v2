@@ -14,10 +14,11 @@ function Minimap()
     local trackCanvas
     local splineCanvas
     local mapCentredCanvas
-    local displayZoom = 3
-    local carScale = 1
+    local displayZoom = .75
+    local carScale = .75
+    local focusedCarScale = 1
     local focusedCarCamRotation = 0
-    local splineResolutionMultiplier = 3
+    local splineResolutionMultiplier = 1
 
     local function GetTrackData()
         local track = {
@@ -78,11 +79,14 @@ function Minimap()
     ---comment
     ---@param car ac.StateCar
     ---@param offset? vec2|number
-    local function DrawCar(car, offset)
-        if not car.isActive then return end
+    ---@param displayCarScale? number
+    local function DrawCar(car, offset, displayCarScale)
+        if not car.isActive or car:driverName():lower():startsWith("traffic") then return end
         if offset == nil then offset = 0 end
+        if displayCarScale == nil then displayCarScale = carScale end
 
-        local carPos = (vec2(car.position.x, car.position.z) + trackData.offset) * displayZoom + offset
+        local carPos = (vec2(car.position.x, car.position.z) + trackData.offset) / trackData.config.SCALE_FACTOR *
+            displayZoom + offset
         local carRotation = math.deg(math.atan2(car.look.x, car.look.z))
 
         local color = rgbm(1, 1, 1, 1)
@@ -97,28 +101,16 @@ function Minimap()
             color = rgbm(1, 0, 1, 1)
         end
 
-        local colliders = ac.getCarColliders(car.index, true)
-
         ui.beginOutline()
         ui.beginRotation()
-        for index, value in ipairs(colliders) do
-            local collider = value
 
-            local carSize = vec2(collider.position.x, collider.position.z) +
-                vec2(collider.size.x, collider.size.z) / 2 * displayZoom * carScale
-
-            ui.drawRectFilled(
-                carPos - carSize,
-                carPos + carSize,
-                color
-            )
-        end
+        ui.drawIcon(ui.Icons.CarFront, carPos - 5 * displayCarScale, carPos + 5 * displayCarScale, color)
 
         ui.endRotation(carRotation - 90)
 
-        ui.endOutline(rgbm(0, 0, 0, 1), 1)
+        ui.endOutline(rgbm(0, 0, 0, 1), 2)
 
-        if car.index == focusedCar.index then return end
+        if car.index == focusedCar.index or car:driverName():lower():startsWith("traffic") then return end
 
         local nameOffset = vec2(0, 10)
 
@@ -145,7 +137,8 @@ function Minimap()
 
         if splineCanvas ~= nil then
             ui.drawImage(splineCanvas, trackDrawPos,
-                trackDrawPos + splineCanvas:size() / splineResolutionMultiplier * displayZoom)
+                trackDrawPos +
+                splineCanvas:size() / trackData.config.SCALE_FACTOR / splineResolutionMultiplier * displayZoom)
         else
             ui.drawImage(trackCanvas, trackDrawPos,
                 trackDrawPos + trackCanvas:size() * displayZoom)
@@ -153,9 +146,14 @@ function Minimap()
         ui.pushDWriteFont(
             "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=Regular;Style=Regular")
         for _, car in ac.iterateCars() do
+            -- We want to draw focused car last for it to be on top
+            if car.index == focusedCar.index then goto continue end
             DrawCar(car, trackDrawPos)
+            ::continue::
         end
+        DrawCar(focusedCar, trackDrawPos, focusedCarScale)
         ui.popDWriteFont()
+
         ui.endPivotRotation(-focusedCarCamRotation - 90, windowCenter)
     end
 
@@ -164,15 +162,18 @@ function Minimap()
 
         if mapCentredCanvas == nil then
             mapCentredCanvas = ui.ExtraCanvas(windowCenter * 2)
+            mapCentredCanvas:setName("Map Centred")
         end
 
         mapCentredCanvas:clear()
         mapCentredCanvas:update(DrawMapCentred)
 
-        globals.draw.Background(windowCenter, 128, rgbm(0, 0, 0, .25))
+        globals.draw.RoundBackground(windowCenter, windowCenter.x, rgbm(0, 0, 0, .125))
+        globals.draw.RoundBackground(windowCenter, windowCenter.x - 4, rgbm(0, 0, 0, .125))
 
         ui.beginTextureShade(mapCentredCanvas)
-        ui.drawCircleFilled(windowCenter, 124, rgbm(1, 1, 1, 1), globals.numSegments)
+        ui.drawCircleFilled(windowCenter, windowCenter.x - 4, rgbm(1, 1, 1, 1 * globals.lightBrightness),
+            globals.numSegments)
         ui.endTextureShade(0, windowCenter * 2)
 
 

@@ -3,6 +3,7 @@ local globals = require("windows.globals")
 
 local tacho = require("windows.tacho")
 local minimap = require("windows.minimap")
+local media = require("windows.media")
 
 function script.windowTacho(dt)
     tacho.window(dt)
@@ -16,12 +17,15 @@ function script.windowMinimap(dt)
     minimap.window(dt)
 end
 
+function script.windowMedia(dt)
+    media.window(dt)
+end
+
 -- optional
 -- function script.Draw3D(dt)
-
 -- end
 
 -- optional, standard available function
 function script.update(dt)
-    globals.draw.update(dt)
+    globals.update(dt)
 end

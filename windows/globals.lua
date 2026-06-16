@@ -4,6 +4,10 @@ function Globals()
     globals.focusedCar = ac.getCar(globals.Sim.focusedCar)
     globals.numSegments = 64
 
+    globals.lightBrightness = 0.1
+    local lightsOff = .5
+    local lightsOn = 1
+
     ---Class for drawing gauges
     function Draw()
         local draw = {}
@@ -55,16 +59,32 @@ function Globals()
             ) * radius
         end
 
+        --- Yes I know these are comepletely unnessecary  lmao
+
         ---Draws a circular gauge background
-        ---@param center vec2 Gauge center
+        ---@param center vec2 Gauge cente
         ---@param radius number Background radius
         ---@param color rgbm Background color
-        function draw.Background(center, radius, color)
+        function draw.RoundBackground(center, radius, color)
             ui.drawCircleFilled(
                 center,
                 radius,
                 color,
                 globals.numSegments
+            )
+        end
+
+        ---Draws a rectangular gauge background with rounded edges
+        ---@param p1 vec2|number Gauge center
+        ---@param p2 vec2|number Background radius
+        ---@param color rgbm Background color
+        ---@param rounding number
+        function draw.RectBackground(p1, p2, color, rounding)
+            ui.drawRectFilled(
+                p1,
+                p2,
+                color,
+                rounding
             )
         end
 
@@ -150,22 +170,31 @@ function Globals()
             ----
         end
 
-        ---comment
-        ---@param position vec2
+        ---Draws dwrite text lol
+        ---@param position vec2|number
         ---@param text string
         ---@param size integer
         ---@param color rgbm
+        ---@param center? vec2 Offset for the text
         function draw.DrawText(
             position,
             text,
             size,
-            color
+            color,
+            center
         )
             local textSize = ui.measureDWriteText(text, size)
+
+            if center == nil then
+                center = textSize / 2
+            else
+                center = center * textSize
+            end
+
             ui.dwriteDrawText(
                 text,
                 size,
-                position - textSize / 2,
+                position - center,
                 color
             )
         end
@@ -215,16 +244,24 @@ function Globals()
             return gradientCanvas
         end
 
-        function draw.update(dt)
-            if draw.startup.ongoing then
-                draw._handleStartup(dt)
-            end
-        end
-
         return draw
     end
 
     globals.draw = Draw()
+
+    function globals.update(dt)
+        globals.draw._handleStartup(dt)
+
+        local timeRatio = (globals.Sim.timeHours * 60 + globals.Sim.timeMinutes) / 1440
+        -- likely over complicated but it works
+        local timeLightBrightnessMod = (1 - math.clamp(math.abs((timeRatio - .5) * 2) + .5, 0, 1)) / .5
+
+        if globals.focusedCar.headlightsActive then
+            globals.lightBrightness = lightsOn
+        else
+            globals.lightBrightness = lightsOff * timeLightBrightnessMod
+        end
+    end
 
     return globals
 end

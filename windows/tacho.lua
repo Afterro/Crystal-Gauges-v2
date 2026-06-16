@@ -5,7 +5,7 @@ if focusedCar == nil then
     return
 end
 
-function Turbo()
+function Tacho()
     local self = {}
 
     -- Meta values updated often or car dependant
@@ -565,4 +565,4 @@ function Turbo()
     return self
 end
 
-return Turbo()
+return Tacho()

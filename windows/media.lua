@@ -7,7 +7,7 @@ if focusedCar == nil then
 end
 
 
-function Minimap()
+function Media()
     local self = {}
 
     local windowCenter = vec2()
@@ -23,32 +23,37 @@ function Minimap()
             "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Regular")
 
         globals.draw.DrawText(
-            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, -8),
+            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, -8 * globals.draw.startup.startupModifiers[3]),
             currentlyPlaying.title,
             12,
-            rgbm(1, 1, 1, 1),
+            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[3]),
             vec2(0, .5)
         )
 
         globals.draw.DrawText(
-            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5),
+            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5 * globals.draw.startup.startupModifiers[4]),
             currentlyPlaying.artist,
             10,
-            rgbm(1, 1, 1, 1),
+            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[4]),
             vec2(0, .5)
         )
 
         ui.popDWriteFont()
 
         ui.beginTextureShade(currentlyPlaying)
-        globals.draw.RectBackground(0, windowCenter.y * 2, rgbm(1, 1, 1, 1), settings.rounding, ui.CornerFlags.Left)
+        globals.draw.RectBackground(0, windowCenter.y * 2,
+            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[2]), settings.rounding,
+            ui.CornerFlags.Left)
         ui.endTextureShade(0, windowCenter.y * 2, true)
 
         ui.drawRectFilled(
             windowCenter.y * 2 - vec2(0, 3),
             windowCenter.y * 2 +
-            vec2((currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) * windowCenter.x, 0),
-            rgbm(1, 0, 1, 1)
+            vec2(
+                (currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) *
+                globals.draw.startup.startupModifiers[3] *
+                windowCenter.x, 0),
+            rgbm(1, 0, 1, 1 * globals.lightBrightness)
         )
     end
 
@@ -56,7 +61,8 @@ function Minimap()
         windowCenter = ui.windowSize() / 2
         currentlyPlaying = ac.currentlyPlaying()
 
-        globals.draw.RectBackground(0, windowCenter * 2, settings.backgroundColor, settings.rounding)
+        globals.draw.RectBackground(0, windowCenter * 2,
+            settings.backgroundColor * rgbm(1, 1, 1, globals.draw.startup.startupModifiers[1]), settings.rounding)
 
         DrawInfo()
 
@@ -74,4 +80,4 @@ function Minimap()
     return self
 end
 
-return Minimap()
+return Media()

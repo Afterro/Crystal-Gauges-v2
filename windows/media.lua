@@ -15,12 +15,83 @@ function Media()
         backgroundColor = rgbm(0, 0, 0, .25),
         rounding = 15
     }
+    local artistString = ""
+
+    self.progressGradient = globals.draw.Gradient(vec2(512, 256), 1, "Media progress gradient")
 
     local currentlyPlaying = ac.currentlyPlaying()
 
     local function DrawInfo()
+        -- Album cover
+
+        ui.beginTextureShade(currentlyPlaying)
+        globals.draw.RectBackground(0, windowCenter.y * 2,
+            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[2]), 5,
+            ui.CornerFlags.Left)
+        ui.endTextureShade(0, windowCenter.y * 2, true)
+
         ui.pushDWriteFont(
             "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Regular")
+        if currentlyPlaying.trackDuration < 0 then
+            -- Nothing playing
+            globals.draw.DrawText(
+                vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5 * globals.draw.startup.startupModifiers[4]),
+                "Nothing playing",
+                10,
+                rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[4]),
+                vec2(0, .5)
+            )
+            ui.popDWriteFont()
+            return
+        end
+
+
+        -- Progress
+        ui.beginPremultipliedAlphaTexture()
+        ui.beginTextureShade(self.progressGradient)
+        ui.drawRectFilled(
+            vec2(windowCenter.y * 2, 0),
+            windowCenter.y * 2 +
+            vec2(
+                (currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) *
+                globals.draw.startup.startupModifiers[3] *
+                ((windowCenter.x * 2 - windowCenter.y * 2)),
+                0
+            ),
+            rgbm(1, 0, 1, 1) * globals.lightBrightness
+        )
+        ui.endTextureShade(
+            vec2(windowCenter.y * 2, 0),
+            windowCenter.y * 2 +
+            vec2(
+                (currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) *
+                windowCenter.x * 2,
+                0
+            )
+        )
+        ui.endPremultipliedAlphaTexture()
+
+        ui.drawRectFilled(
+            windowCenter.y * 2 - vec2(0, 3),
+            windowCenter.y * 2 +
+            vec2(
+                globals.draw.startup.startupModifiers[3] *
+                (windowCenter.x * 2 - windowCenter.y * 2), 0),
+            rgbm(1, 1, 1, .1 * globals.lightBrightness)
+        )
+
+
+        ui.drawRectFilled(
+            windowCenter.y * 2 - vec2(0, 3),
+            windowCenter.y * 2 +
+            vec2(
+                (currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) *
+                globals.draw.startup.startupModifiers[3] *
+                (windowCenter.x * 2 - windowCenter.y * 2), 0),
+            rgbm(1, 0, 1, 1 * globals.lightBrightness)
+        )
+
+        -- Text
 
         globals.draw.DrawText(
             vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, -8 * globals.draw.startup.startupModifiers[3]),
@@ -32,29 +103,32 @@ function Media()
 
         globals.draw.DrawText(
             vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5 * globals.draw.startup.startupModifiers[4]),
-            currentlyPlaying.artist,
+            artistString,
             10,
             rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[4]),
             vec2(0, .5)
         )
 
-        ui.popDWriteFont()
+        local positionMinutes = math.floor(currentlyPlaying.trackPosition / 60)
+        local positionSeconds = math.floor(currentlyPlaying.trackPosition - positionMinutes * 60)
+        local trackPositionString = string.format("%d:%02d", positionMinutes, positionSeconds)
 
-        ui.beginTextureShade(currentlyPlaying)
-        globals.draw.RectBackground(0, windowCenter.y * 2,
-            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[2]), settings.rounding,
-            ui.CornerFlags.Left)
-        ui.endTextureShade(0, windowCenter.y * 2, true)
+        local durationMinutes = math.floor(currentlyPlaying.trackDuration / 60)
+        local durationSeconds = math.floor(currentlyPlaying.trackDuration - durationMinutes * 60)
+        local trackDurationString = string.format("%d:%02d", durationMinutes, durationSeconds)
 
-        ui.drawRectFilled(
-            windowCenter.y * 2 - vec2(0, 3),
-            windowCenter.y * 2 +
-            vec2(
-                (currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) *
-                globals.draw.startup.startupModifiers[3] *
-                windowCenter.x, 0),
-            rgbm(1, 0, 1, 1 * globals.lightBrightness)
+        local totalDurationString = trackPositionString .. " / " .. trackDurationString
+
+        globals.draw.DrawText(
+            vec2(0, windowCenter.y) +
+            vec2(windowCenter.x * 2 - 5, 5 * globals.draw.startup.startupModifiers[4]),
+            totalDurationString,
+            10,
+            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[4]),
+            vec2(1, .5)
         )
+
+        ui.popDWriteFont()
     end
 
     function self.window(dt)
@@ -62,11 +136,28 @@ function Media()
         currentlyPlaying = ac.currentlyPlaying()
 
         globals.draw.RectBackground(0, windowCenter * 2,
-            settings.backgroundColor * rgbm(1, 1, 1, globals.draw.startup.startupModifiers[1]), settings.rounding)
+            settings.backgroundColor * rgbm(1, 1, 1, globals.draw.startup.startupModifiers[1]), 5)
 
         DrawInfo()
 
+        artistString = currentlyPlaying.artist
         if ui.windowHovered() then
+            if currentlyPlaying.isPlaying then
+                artistString = "Right click to pause"
+                ui.drawIcon(ui.Icons.Pause,
+                    0 + 10, windowCenter.y * 2 - 10
+                )
+            else
+                artistString = "Right click to play"
+                ui.drawIcon(ui.Icons.Play,
+                    0 + 10, windowCenter.y * 2 - 10
+                )
+            end
+
+            if ui.mouseClicked(ui.MouseButton.Right) then
+                ac.mediaPlayPause()
+            end
+
             ui.drawRect(vec2(0, 0),
                 windowCenter * 2,
                 rgbm(1, 1, 1, 1),

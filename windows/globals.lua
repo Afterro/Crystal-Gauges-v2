@@ -79,9 +79,10 @@ function Globals()
         ---@param p1 vec2|number Gauge center
         ---@param p2 vec2|number Background radius
         ---@param color rgbm Background color
-        ---@param rounding number
+        ---@param rounding? number
         ---@param roundingFlags? ui.CornerFlags
         function draw.RectBackground(p1, p2, color, rounding, roundingFlags)
+            if rounding == nil then rounding = 0 end
             if roundingFlags == nil then roundingFlags = ui.CornerFlags.All end
             ui.drawRectFilled(
                 p1,
@@ -203,15 +204,16 @@ function Globals()
             )
         end
 
-        ---Creates a gradient for gauges
+        ---Creates a radial gradient for gauges
         ---
-        ---Rendered only once
+        ---Rendered only once at startup
         ---### PERFORMANCE!!!!!!!1!!1111
         ---@param resolution number
         ---@param width number
         ---@param brightness? number
         ---@param name? string Name for the gradient
-        function draw.GetGradient(
+        ---@return ui.ExtraCanvas
+        function draw.RadialGradient(
             resolution,
             width,
             brightness,
@@ -223,6 +225,8 @@ function Globals()
                 render.AntialiasingMode.none,
                 render.TextureFormat.R8G8B8A8.UNorm
             )
+
+            if brightness == nil then brightness = 1 end
 
             local center = resolution / 2
             width = width / 2
@@ -248,11 +252,49 @@ function Globals()
             return gradientCanvas
         end
 
+        ---Creates a gradient for gauges
+        ---
+        ---Rendered only once at startup
+        ---@param resolution vec2|number
+        ---@param brightness? number
+        ---@param name? string Name for the gradient
+        ---@return ui.ExtraCanvas
+        function draw.Gradient(
+            resolution,
+            brightness,
+            name
+        )
+            local gradientCanvas = ui.ExtraCanvas(
+                resolution,
+                1,
+                render.AntialiasingMode.none,
+                render.TextureFormat.R8G8B8A8.UNorm
+            )
+            if brightness == nil then brightness = 1 end
+
+            gradientCanvas:update(function()
+                local segments = globals.numSegments
+                local shades = segments
+                for i = 1, shades, 1 do
+                    ui.drawRectFilled(
+                        vec2(0, 1) * resolution / .75 * (i / shades),
+                        resolution,
+                        rgbm(1, 1, 1, 1 / shades * brightness)
+                    )
+                end
+            end
+            )
+            if name ~= nil then
+                gradientCanvas:setName(name)
+            end
+
+            return gradientCanvas
+        end
+
         return draw
     end
 
     globals.draw = Draw()
-
     function globals.update(dt)
         globals.draw._handleStartup(dt)
 

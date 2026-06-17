@@ -68,12 +68,13 @@ function Tacho()
     local windowCenter = vec2()
     local draw = globals.draw
 
-    self.gradientCanvas = draw.GetGradient(
+    self.gradientCanvas = draw.RadialGradient(
         self.settings.radius,
         self.settings.value.gradient.width,
         self.settings.value.gradient.color.mult,
         "Tacho Gradient"
     )
+
 
     local function DrawSpeedAndGear()
         local textColor = rgbm(1, 1, 1, globals.lightBrightness * stages[4])
@@ -515,6 +516,9 @@ function Tacho()
         )
 
         DrawShiftLights()
+
+
+        ui.popDWriteFont()
     end
 
     local function updateValues()

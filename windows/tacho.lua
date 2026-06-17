@@ -14,6 +14,7 @@ function Tacho()
         gaugeValueRatio = .5,
         -- Max value for this gauge
         maxValue = math.ceil(focusedCar.rpmLimiter / 1000) * 1000,
+        maxBoost = 0,
         -- Max display value
         gaugeMaxDisplayValue = math.ceil(focusedCar.rpmLimiter / 1000),
         softLimitRatio = 0
@@ -315,80 +316,38 @@ function Tacho()
         ui.popDWriteFont()
     end
 
-    local function DrawShiftLights()
-        local width = 5
-        local radius = (133 + width / 2) * stages[1]
+    local function DrawBoost()
+        if focusedCar.turboCount < 1 then return end
+        local boostBegin = 15
+        local boostSpan = -30
 
-        local rpms = self.settings.redline.soft.rpms
-        local ratio = math.clamp(
-            (focusedCar.rpm - focusedCar.rpmLimiter + rpms) / rpms + .1,
-            0,
-            1
-        )
+        local currentBoost = focusedCar.turboBoost
+        if currentBoost > self.meta.maxBoost then self.meta.maxBoost = currentBoost end
+        local boostRatio = currentBoost / self.meta.maxBoost
 
-        local backgroundColor = rgbm(0, 0, 0, .25 * stages[1] * ratio)
-        local color = rgbm(1, 1, 1, stages[1] * ratio)
+        local valueColorMult = math.clamp(globals.lightBrightness, .5, 1)
 
-        if ratio > .5 then
-            color = rgbm(0, 1, 1, stages[1] * ratio)
-        end
-        if ratio > .85 then
-            color = rgbm(1, 0, 0, stages[1] * ratio)
-        end
-
-        local begin = -30 / 2
-        local span = 45
-
-        ui.pathArcTo(
+        -- Background
+        draw.DrawArc(
             windowCenter,
-            radius,
-            math.rad(-begin),
-            math.rad(-begin - span),
-            globals.numSegments
-        )
-        ui.pathStroke(
-            backgroundColor,
-            false,
-            width
+            boostBegin,
+            boostSpan * stages[4],
+            (self.settings.radius - self.settings.value.background.width / 2) * stages[1],
+            { 0, 0 },
+            self.settings.value.background.width,
+            self.settings.value.background.color * rgbm(1, 1, 1, stages[1])
         )
 
-        ui.pathArcTo(
+        -- Value Needle
+        draw.DrawArc(
             windowCenter,
-            radius,
-            math.rad(180 + begin),
-            math.rad(180 + begin + span),
-            globals.numSegments
-        )
-        ui.pathStroke(
-            backgroundColor,
-            false,
-            width
-        )
-
-        ui.pathArcTo(
-            windowCenter,
-            radius,
-            math.rad(-begin),
-            math.rad(-begin - span * ratio),
-            globals.numSegments
-        )
-        ui.pathStroke(
-            color,
-            false,
-            width
-        )
-
-        ui.pathArcTo(
-            windowCenter,
-            radius,
-            math.rad(180 + begin),
-            math.rad(180 + begin + span * ratio),
-            globals.numSegments
-        )
-        ui.pathStroke(
-            color,
-            false,
-            width
+            boostBegin,
+            boostSpan * boostRatio * stages[4],
+            (self.settings.radius - self.settings.value.width / 2) * stages[1],
+            { 0, 0 },
+            self.settings.value.width,
+            self.settings.value.color *
+            rgbm(valueColorMult, valueColorMult, valueColorMult, stages[3])
         )
     end
 
@@ -416,6 +375,8 @@ function Tacho()
         DrawIndicators()
         DrawSpeedAndGear()
         DrawMileage()
+
+        DrawBoost()
 
         -- Range background
         draw.DrawArc(
@@ -514,9 +475,6 @@ function Tacho()
             self.settings.value.color *
             rgbm(valueColorMult, valueColorMult, valueColorMult, stages[3])
         )
-
-        DrawShiftLights()
-
 
         ui.popDWriteFont()
     end

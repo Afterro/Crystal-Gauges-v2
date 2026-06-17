@@ -169,8 +169,13 @@ function Minimap()
         mapCentredCanvas:clear()
         mapCentredCanvas:update(DrawMapCentred)
 
-        globals.draw.RoundBackground(windowCenter, windowCenter.x * globals.draw.startup.startupModifiers[1],
-            rgbm(0, 0, 0, .125))
+        ui.drawCircle(
+            windowCenter,
+            (windowCenter.x - 2) * globals.draw.startup.startupModifiers[2],
+            rgbm(.5, .5, .5, .25),
+            globals.numSegments,
+            4
+        )
         globals.draw.RoundBackground(windowCenter, (windowCenter.x - 4) * globals.draw.startup.startupModifiers[2],
             rgbm(0, 0, 0, .125))
 
@@ -189,16 +194,16 @@ function Minimap()
                 nameScale = math.clamp(nameScale, .25, 20)
                 ui.text("Name scale: " .. stringify(nameScale))
             elseif ui.keyboardButtonDown(ui.KeyIndex.LeftShift) then
-                carScale = carScale + scroll * .25
-                carScale = math.clamp(carScale, .25, 20)
+                carScale = carScale + scroll * .05
+                carScale = math.clamp(carScale, .05, 20)
                 ui.text("Other car scale: " .. stringify(carScale))
             elseif ui.keyboardButtonDown(ui.KeyIndex.LeftControl) then
-                focusedCarScale = focusedCarScale + scroll * .25
-                focusedCarScale = math.clamp(focusedCarScale, .25, 20)
+                focusedCarScale = focusedCarScale + scroll * .05
+                focusedCarScale = math.clamp(focusedCarScale, .05, 20)
                 ui.text("Focused car scale: " .. stringify(focusedCarScale))
             else
-                displayZoom = displayZoom + ui.mouseWheel() * .25
-                displayZoom = math.clamp(displayZoom, .25, 20)
+                displayZoom = displayZoom + ui.mouseWheel() * .05
+                displayZoom = math.clamp(displayZoom, .05, 20)
                 ui.text("Zoom: " .. stringify(displayZoom))
             end
 

@@ -215,7 +215,7 @@ function Tacho()
 
         -- Fuel indicator
         local lightsPos = draw.GetPosRadial(14, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
-        local brakeColor = rgbm(1, 1, 0, .75 * stages[5])
+        local fuelColor = rgbm(1, 1, 0, .75 * stages[5])
 
         ui.drawCircleFilled(
             windowCenter + lightsPos,
@@ -226,7 +226,7 @@ function Tacho()
             ui.drawCircleFilled(
                 windowCenter + lightsPos,
                 indicatorsSize,
-                brakeColor
+                fuelColor
             )
         end
 
@@ -320,19 +320,19 @@ function Tacho()
         if focusedCar.turboCount < 1 then return end
         local boostBegin = 15
         local boostSpan = -30
+        local lineWidth = self.settings.value.background.width / 2
 
         local currentBoost = focusedCar.turboBoost
         if currentBoost > self.meta.maxBoost then self.meta.maxBoost = currentBoost end
         local boostRatio = currentBoost / self.meta.maxBoost
-
-        local valueColorMult = math.clamp(globals.lightBrightness, .5, 1)
+        if self.meta.maxBoost <= 0.01 then boostRatio = 0 end
 
         -- Background
         draw.DrawArc(
             windowCenter,
             boostBegin,
             boostSpan * stages[4],
-            (self.settings.radius - self.settings.value.background.width / 2) * stages[1],
+            (self.settings.radius - lineWidth) * stages[1],
             { 0, 0 },
             self.settings.value.background.width,
             self.settings.value.background.color * rgbm(1, 1, 1, stages[1])
@@ -343,11 +343,46 @@ function Tacho()
             windowCenter,
             boostBegin,
             boostSpan * boostRatio * stages[4],
-            (self.settings.radius - self.settings.value.width / 2) * stages[1],
+            (self.settings.radius - lineWidth) * stages[1],
             { 0, 0 },
             self.settings.value.width,
-            self.settings.value.color *
-            rgbm(valueColorMult, valueColorMult, valueColorMult, stages[3])
+            self.settings.value.color * globals.lightBrightness *
+            rgbm(1, 1, 1, stages[3])
+        )
+    end
+
+    local function DrawFuel()
+        local fuelBegin = 45
+        local fuelSpan = 30
+        local lineWidth = self.settings.value.width
+        local radius = (self.settings.radius + lineWidth * 2 + 2) * stages[1]
+        local fuelRatio = focusedCar.fuel / focusedCar.maxFuel
+
+        -- Background
+        draw.DrawArc(
+            windowCenter,
+            fuelBegin,
+            fuelSpan * stages[4],
+            radius,
+            { 0, 0 },
+            self.settings.value.background.width,
+            self.settings.value.background.color * rgbm(1, 1, 1, stages[1])
+        )
+
+        local fuelColor = self.settings.value.color
+        if focusedCar.fuel / focusedCar.maxFuel <= .15 then
+            fuelColor = rgbm(1, 1, 0, 1)
+        end
+        -- Value Needle
+        draw.DrawArc(
+            windowCenter,
+            fuelBegin,
+            fuelSpan * fuelRatio * stages[4],
+            radius,
+            { 0, 0 },
+            self.settings.value.width,
+            fuelColor * globals.lightBrightness *
+            rgbm(1, 1, 1, stages[3])
         )
     end
 
@@ -377,6 +412,7 @@ function Tacho()
         DrawMileage()
 
         DrawBoost()
+        DrawFuel()
 
         -- Range background
         draw.DrawArc(
@@ -463,7 +499,6 @@ function Tacho()
             false
         )
 
-        local valueColorMult = math.clamp(globals.lightBrightness, .5, 1)
         -- Value Needle
         draw.DrawArc(
             windowCenter,
@@ -472,8 +507,8 @@ function Tacho()
             (self.settings.radius + self.settings.value.width / 2),
             { self.settings.value.pinLengths[1] * stages[4], self.settings.value.pinLengths[2] * stages[4] },
             self.settings.value.width,
-            self.settings.value.color *
-            rgbm(valueColorMult, valueColorMult, valueColorMult, stages[3])
+            self.settings.value.color * globals.lightBrightness *
+            rgbm(1, 1, 1, stages[3])
         )
 
         ui.popDWriteFont()

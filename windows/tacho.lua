@@ -8,17 +8,15 @@ end
 function Tacho()
     local self = {}
 
-    -- Meta values updated often or car dependant
-    self.meta = {
-        -- Value needle ratio over the whole gauge range
-        gaugeValueRatio = .5,
-        -- Max value for this gauge
-        maxValue = math.ceil(focusedCar.rpmLimiter / 1000) * 1000,
-        maxBoost = 0,
-        -- Max display value
-        gaugeMaxDisplayValue = math.ceil(focusedCar.rpmLimiter / 1000),
-        softLimitRatio = 0
-    }
+    -- Values updated often or car dependant
+    -- Value needle ratio over the whole gauge range
+    local gaugeValueRatio = .5
+    -- Max value for this gauge
+    local maxValue = math.ceil(focusedCar.rpmLimiter / 1000) * 1000
+    local maxBoost = 0
+    -- Max display value
+    local gaugeMaxDisplayValue = math.ceil(focusedCar.rpmLimiter / 1000)
+    local softLimitRatio = 0
 
     self.settings = {
         radius = 128,
@@ -103,6 +101,7 @@ function Tacho()
 
         local gearNum = math.round(focusedCar.engagedGear)
         local gear = stringify(gearNum)
+        local gearPos = windowCenter + vec2(0, 26) * math.clamp(stages[4] + .75, 0, 1)
         if gearNum == 0 then
             gear = "N"
         else
@@ -110,7 +109,7 @@ function Tacho()
         end
 
         draw.DrawText(
-            windowCenter + vec2(0, 26) * math.clamp(stages[4] + .75, 0, 1),
+            gearPos,
             gear,
             42,
             textColor
@@ -124,17 +123,17 @@ function Tacho()
         local color = rgbm(1, 1, 1, globals.lightBrightness)
 
         local step = 1
-        if self.meta.gaugeMaxDisplayValue % 10 == 0 then
-            step = self.meta.gaugeMaxDisplayValue / 10
+        if gaugeMaxDisplayValue % 10 == 0 then
+            step = gaugeMaxDisplayValue / 10
         end
 
-        for i = 0, self.meta.gaugeMaxDisplayValue, step do
+        for i = 0, gaugeMaxDisplayValue, step do
             local pos = vec2(
                 math.cos(math.rad(90 + self.settings.valueRange.begin +
-                    (self.settings.valueRange.span / self.meta.gaugeMaxDisplayValue) *
+                    (self.settings.valueRange.span / gaugeMaxDisplayValue) *
                     i)),
                 math.sin(math.rad(90 + self.settings.valueRange.begin +
-                    (self.settings.valueRange.span / self.meta.gaugeMaxDisplayValue) *
+                    (self.settings.valueRange.span / gaugeMaxDisplayValue) *
                     i))
             ) * (self.settings.radius - 20) * math.clamp(stages[3] + .5, 0, 1) + windowCenter
 
@@ -323,9 +322,11 @@ function Tacho()
         local lineWidth = self.settings.value.background.width / 2
 
         local currentBoost = focusedCar.turboBoost
-        if currentBoost > self.meta.maxBoost then self.meta.maxBoost = currentBoost end
-        local boostRatio = currentBoost / self.meta.maxBoost
-        if self.meta.maxBoost <= 0.01 then boostRatio = 0 end
+        if currentBoost > maxBoost then maxBoost = currentBoost end
+        local boostRatio = currentBoost / maxBoost
+
+
+        if maxBoost <= 0.01 then boostRatio = 0 end
 
         -- Background
         draw.DrawArc(
@@ -353,7 +354,7 @@ function Tacho()
 
     local function DrawFuel()
         local fuelBegin = 45
-        local fuelSpan = 30
+        local fuelSpan = 45
         local lineWidth = self.settings.value.width
         local radius = (self.settings.radius + lineWidth * 2 + 2) * stages[1]
         local fuelRatio = focusedCar.fuel / focusedCar.maxFuel
@@ -430,7 +431,7 @@ function Tacho()
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
-            -self.settings.valueRange.span * ((self.meta.maxValue - focusedCar.rpmLimiter) / self.meta.maxValue) *
+            -self.settings.valueRange.span * ((maxValue - focusedCar.rpmLimiter) / maxValue) *
             stages[4],
             (self.settings.radius + self.settings.redline.hard.offset + self.settings.value.background.width / 2),
             { self.settings.redline.hard.pinLengths[1] * stages[4], self.settings.redline.hard.pinLengths[2] * stages[5] },
@@ -443,7 +444,7 @@ function Tacho()
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
             -self.settings.valueRange.span *
-            (self.meta.maxValue - focusedCar.rpmLimiter + self.settings.redline.soft.rpms) / self.meta.maxValue *
+            (maxValue - focusedCar.rpmLimiter + self.settings.redline.soft.rpms) / maxValue *
             stages[4],
             (self.settings.radius + self.settings.redline.soft.offset + self.settings.value.background.width / 2),
             { self.settings.redline.soft.pinLengths[1] * stages[4], self.settings.redline.soft.pinLengths[2] * stages[4] },
@@ -452,9 +453,9 @@ function Tacho()
         )
 
         local gradientColor = rgbm(
-            self.settings.value.gradient.color.r + self.meta.softLimitRatio,
-            self.settings.value.gradient.color.g - self.meta.softLimitRatio,
-            (self.settings.value.gradient.color.b - self.meta.softLimitRatio),
+            self.settings.value.gradient.color.r + softLimitRatio,
+            self.settings.value.gradient.color.g - softLimitRatio,
+            (self.settings.value.gradient.color.b - softLimitRatio),
             1
         ) * globals.lightBrightness * stages[5]
 
@@ -464,7 +465,7 @@ function Tacho()
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin,
-            self.settings.valueRange.span * self.meta.gaugeValueRatio,
+            self.settings.valueRange.span * gaugeValueRatio,
             self.settings.radius * .5,
             { 0, 0 },
             self.settings.radius,
@@ -482,16 +483,16 @@ function Tacho()
         DrawRevNums()
 
         local highlightColor = rgbm(
-            self.settings.value.highlight.color.r + self.meta.softLimitRatio,
-            self.settings.value.highlight.color.g - self.meta.softLimitRatio,
-            self.settings.value.highlight.color.b - self.meta.softLimitRatio,
+            self.settings.value.highlight.color.r + softLimitRatio,
+            self.settings.value.highlight.color.g - softLimitRatio,
+            self.settings.value.highlight.color.b - softLimitRatio,
             self.settings.value.highlight.color.mult
         ) * globals.lightBrightness
         -- Value Highlight
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin,
-            self.settings.valueRange.span * self.meta.gaugeValueRatio * stages[4],
+            self.settings.valueRange.span * gaugeValueRatio * stages[4],
             (self.settings.radius + self.settings.value.highlight.offset + self.settings.value.highlight.width / 2),
             { 0, 0 },
             self.settings.value.highlight.width,
@@ -503,7 +504,7 @@ function Tacho()
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin,
-            self.settings.valueRange.span * self.meta.gaugeValueRatio * stages[4],
+            self.settings.valueRange.span * gaugeValueRatio * stages[4],
             (self.settings.radius + self.settings.value.width / 2),
             { self.settings.value.pinLengths[1] * stages[4], self.settings.value.pinLengths[2] * stages[4] },
             self.settings.value.width,
@@ -518,10 +519,10 @@ function Tacho()
         windowSize = ui.windowSize()
         windowCenter = windowSize / 2
 
-        self.meta.gaugeValueRatio = focusedCar.rpm / self.meta.maxValue
-        self.meta.softLimitRatio = (focusedCar.rpm - focusedCar.rpmLimiter + self.settings.redline.soft.rpms) /
+        gaugeValueRatio = focusedCar.rpm / maxValue
+        softLimitRatio = (focusedCar.rpm - focusedCar.rpmLimiter + self.settings.redline.soft.rpms) /
             self.settings.redline.soft.rpms
-        self.meta.softLimitRatio = math.clamp(self.meta.softLimitRatio * 2, 0, 1)
+        softLimitRatio = math.clamp(softLimitRatio * 2, 0, 1)
     end
 
     function self.window(dt)

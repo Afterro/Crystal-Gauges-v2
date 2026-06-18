@@ -114,7 +114,7 @@ function Media()
         local trackPositionString = string.format("%d:%02d", positionMinutes, positionSeconds)
 
         local durationMinutes = math.floor(currentlyPlaying.trackDuration / 60)
-        local durationSeconds = math.floor(currentlyPlaying.trackDuration - durationMinutes * 60)
+        local durationSeconds = math.floor(currentlyPlaying.trackDuration - 1 - durationMinutes * 60)
         local trackDurationString = string.format("%d:%02d", durationMinutes, durationSeconds)
 
         local totalDurationString = trackPositionString .. " / " .. trackDurationString

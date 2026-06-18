@@ -104,11 +104,11 @@ function Minimap()
         ui.beginOutline()
         ui.beginRotation()
 
-        ui.drawIcon(ui.Icons.CarFront, carPos - 5 * displayCarScale, carPos + 5 * displayCarScale, color)
+        ui.drawIcon(ui.Icons.UpAlt, carPos - 5 * displayCarScale, carPos + 5 * displayCarScale, color)
 
         ui.endRotation(carRotation - 90)
 
-        ui.endOutline(rgbm(0, 0, 0, 1), 2)
+        ui.endOutline(rgbm(0, 0, 0, 1), 1)
 
         if car.index == focusedCar.index or car:driverName():lower():startsWith("traffic") then return end
 
@@ -169,20 +169,28 @@ function Minimap()
         mapCentredCanvas:clear()
         mapCentredCanvas:update(DrawMapCentred)
 
-        ui.drawCircle(
-            windowCenter,
-            (windowCenter.x - 2) * globals.draw.startup.startupModifiers[2],
-            rgbm(.5, .5, .5, .25),
-            globals.numSegments,
+        globals.draw.RectBackground(
+            4,
+            windowCenter * 2 - 4,
+            rgbm(0, 0, 0, .125),
+            10
+        )
+        ui.drawRect(
+            2,
+            windowCenter * 2 - 2,
+            rgbm(0, 0, 0, .25),
+            10,
+            ui.CornerFlags.All,
             4
         )
-        globals.draw.RoundBackground(windowCenter, (windowCenter.x - 4) * globals.draw.startup.startupModifiers[2],
-            rgbm(0, 0, 0, .125))
 
         ui.beginTextureShade(mapCentredCanvas)
-        ui.drawCircleFilled(windowCenter, (windowCenter.x - 4) * globals.draw.startup.startupModifiers[3],
+        ui.drawRectFilled(
+            4,
+            windowCenter * 2 - 4,
             rgbm(1, 1, 1, 1 * globals.lightBrightness),
-            globals.numSegments)
+            10
+        )
         ui.endTextureShade(0, windowCenter * 2)
 
 

@@ -6,8 +6,6 @@ function Globals()
     globals.numSegments = 64
 
     globals.lightBrightness = 0.1
-    local lightsOff = .5
-    local lightsOn = 1
 
     ---Class for drawing gauges
     function Draw()
@@ -298,14 +296,16 @@ function Globals()
     function globals.update(dt)
         globals.draw._handleStartup(dt)
 
-        local timeRatio = (globals.Sim.timeHours * 60 + globals.Sim.timeMinutes) / 1440
-        -- likely over complicated but it works
-        local timeLightBrightnessMod = (1 - math.clamp(math.abs((timeRatio - .5) * 2) + .5, 0, 1)) / .5
+        local sunAngle = ac.getSunAngle()
+        ac.debug("SunAngle", sunAngle)
+
+        local sunBrightnessMod = math.clamp(1 - (sunAngle / 100), 0, .25) / .25
+        ac.debug("Sun Angle mod", sunBrightnessMod)
 
         if globals.focusedCar.headlightsActive then
-            globals.lightBrightness = lightsOn
+            globals.lightBrightness = 1
         else
-            globals.lightBrightness = lightsOff * timeLightBrightnessMod
+            globals.lightBrightness = sunBrightnessMod
         end
     end
 

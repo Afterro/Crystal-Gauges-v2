@@ -173,13 +173,13 @@ function Minimap()
             4,
             windowCenter * 2 - 4,
             rgbm(0, 0, 0, .125),
-            10
+            5
         )
         ui.drawRect(
             2,
             windowCenter * 2 - 2,
-            rgbm(0, 0, 0, .25),
-            10,
+            rgbm(1, 1, 1, .1),
+            5,
             ui.CornerFlags.All,
             4
         )
@@ -189,7 +189,7 @@ function Minimap()
             4,
             windowCenter * 2 - 4,
             rgbm(1, 1, 1, 1 * globals.lightBrightness),
-            10
+            5
         )
         ui.endTextureShade(0, windowCenter * 2)
 

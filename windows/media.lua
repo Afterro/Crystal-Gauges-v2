@@ -77,7 +77,7 @@ function Media()
             vec2(
                 globals.draw.startup.startupModifiers[3] *
                 (windowCenter.x * 2 - windowCenter.y * 2), 0),
-            rgbm(1, 1, 1, .1 * globals.lightBrightness)
+            rgbm(1, 1, 1, .1)
         )
 
 
@@ -141,15 +141,18 @@ function Media()
         DrawInfo()
 
         artistString = currentlyPlaying.artist
+
+        if not currentlyPlaying.isPlaying then
+            artistString = "Right click to play"
+            ui.drawIcon(ui.Icons.Play,
+                0 + 10, windowCenter.y * 2 - 10
+            )
+        end
+
         if ui.windowHovered() then
             if currentlyPlaying.isPlaying then
                 artistString = "Right click to pause"
                 ui.drawIcon(ui.Icons.Pause,
-                    0 + 10, windowCenter.y * 2 - 10
-                )
-            else
-                artistString = "Right click to play"
-                ui.drawIcon(ui.Icons.Play,
                     0 + 10, windowCenter.y * 2 - 10
                 )
             end

@@ -17,8 +17,6 @@ function Media()
     }
     local artistString = ""
 
-    self.progressGradient = globals.draw.Gradient(vec2(512, 256), 1, "Media progress gradient")
-
     local currentlyPlaying = ac.currentlyPlaying()
 
     local function DrawInfo()
@@ -48,7 +46,7 @@ function Media()
 
         -- Progress
         ui.beginPremultipliedAlphaTexture()
-        ui.beginTextureShade(self.progressGradient)
+        ui.beginTextureShade(globals.draw.horizontalGradient)
         ui.drawRectFilled(
             vec2(windowCenter.y * 2, 0),
             windowCenter.y * 2 +

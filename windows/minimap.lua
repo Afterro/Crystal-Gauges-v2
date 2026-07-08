@@ -13,11 +13,11 @@ function Minimap()
     local trackCanvas
     local splineCanvas
     local mapCentredCanvas
-    local displayZoom = .5
-    local carScale = .75
-    local focusedCarScale = 1
+    local displayZoom = .75
+    local carScale = 1.75
+    local focusedCarScale = 2
     local focusedCarCamRotation = 0
-    local nameScale = 1
+    local nameScale = 2
     local splineResolutionMultiplier = 1
 
     local function GetTrackData()
@@ -64,14 +64,14 @@ function Minimap()
                 local pos2 = vec2(pos3.x, pos3.z) + trackData.offset
                 ui.pathLineTo(pos2 * splineResolutionMultiplier)
             end
-            ui.pathStroke(rgbm(0, 0, 0, 1), true, trackData.config.DRAWING_SIZE * splineResolutionMultiplier * 1.25)
+            ui.pathStroke(rgbm(0, 0, 0, 1), false, trackData.config.DRAWING_SIZE * splineResolutionMultiplier * 1.25)
 
             for i = 1, detail, 1 do
                 local pos3 = ac.trackProgressToWorldCoordinate(i / detail, true)
                 local pos2 = vec2(pos3.x, pos3.z) + trackData.offset
                 ui.pathLineTo(pos2 * splineResolutionMultiplier)
             end
-            ui.pathStroke(rgbm(1, 1, 1, 1), true, trackData.config.DRAWING_SIZE * splineResolutionMultiplier)
+            ui.pathStroke(rgbm(1, 1, 1, 1), false, trackData.config.DRAWING_SIZE * splineResolutionMultiplier)
         end)
         return canvas
     end
@@ -162,7 +162,7 @@ function Minimap()
         local windowCenter = ui.windowSize() / 2
 
         if mapCentredCanvas == nil then
-            mapCentredCanvas = ui.ExtraCanvas(windowCenter * 2)
+            mapCentredCanvas = ui.ExtraCanvas(windowCenter * 2 * 2)
             mapCentredCanvas:setName("Map Centred")
         end
 

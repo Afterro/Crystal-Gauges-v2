@@ -257,7 +257,7 @@ function Globals()
         ---@param brightness? number
         ---@param name? string Name for the gradient
         ---@return ui.ExtraCanvas
-        function draw.Gradient(
+        function draw.HorizontalGradient(
             resolution,
             brightness,
             name
@@ -275,7 +275,46 @@ function Globals()
                 local shades = segments
                 for i = 1, shades, 1 do
                     ui.drawRectFilled(
-                        vec2(0, 1) * resolution / .75 * (i / shades),
+                        vec2(0, 1) * resolution * (i / shades),
+                        resolution,
+                        rgbm(1, 1, 1, 1 / shades * brightness)
+                    )
+                end
+            end
+            )
+            if name ~= nil then
+                gradientCanvas:setName(name)
+            end
+
+            return gradientCanvas
+        end
+
+        ---Creates a gradient for gauges
+        ---
+        ---Rendered only once at startup
+        ---@param resolution vec2|number
+        ---@param brightness? number
+        ---@param name? string Name for the gradient
+        ---@return ui.ExtraCanvas
+        function draw.VerticalGradient(
+            resolution,
+            brightness,
+            name
+        )
+            local gradientCanvas = ui.ExtraCanvas(
+                resolution,
+                1,
+                render.AntialiasingMode.none,
+                render.TextureFormat.R8G8B8A8.UNorm
+            )
+            if brightness == nil then brightness = 1 end
+
+            gradientCanvas:update(function()
+                local segments = globals.numSegments
+                local shades = segments
+                for i = 1, shades, 1 do
+                    ui.drawRectFilled(
+                        vec2(1, 0) * resolution * (i / shades),
                         resolution,
                         rgbm(1, 1, 1, 1 / shades * brightness)
                     )
@@ -293,13 +332,17 @@ function Globals()
     end
 
     globals.draw = Draw()
+
+    globals.draw.horizontalGradient = globals.draw.HorizontalGradient(512, 1, "Horizontal Gradient")
+    globals.draw.verticalGradient = globals.draw.VerticalGradient(1024, 1, "Vertical Gradient")
+
     function globals.update(dt)
         globals.draw._handleStartup(dt)
 
         local sunAngle = ac.getSunAngle()
         ac.debug("SunAngle", sunAngle)
 
-        local sunBrightnessMod = math.clamp(1 - (sunAngle / 100), 0, .25) / .25
+        local sunBrightnessMod = math.clamp(1 - (sunAngle / 95), 0, .25) / .25
         ac.debug("Sun Angle mod", sunBrightnessMod)
 
         if globals.focusedCar.headlightsActive then

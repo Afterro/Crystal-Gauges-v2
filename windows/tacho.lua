@@ -31,7 +31,7 @@ function Tacho()
             width = 4,
             background = {
                 color = rgbm(.5, .5, .5, .25),
-                pinLengths = { 6, 10 },
+                pinLengths = { 0, 0 },
                 width = 4
             },
             highlight = {
@@ -54,7 +54,7 @@ function Tacho()
             },
             hard = {
                 color = rgbm(.5, 0, 0, 1),
-                pinLengths = { 6, 0 },
+                pinLengths = { 0, 0 },
                 offset = -4,
                 width = 4
             }
@@ -68,8 +68,8 @@ function Tacho()
     local draw = globals.draw
 
     self.gradientCanvas = draw.RadialGradient(
-        self.settings.radius,
-        self.settings.value.gradient.width,
+        self.settings.radius * 4,
+        self.settings.value.gradient.width * 4,
         self.settings.value.gradient.color.mult,
         "Tacho Gradient"
     )
@@ -347,7 +347,7 @@ function Tacho()
             (self.settings.radius - lineWidth) * stages[1],
             { 0, 0 },
             self.settings.value.width,
-            self.settings.value.color * globals.lightBrightness *
+            self.settings.value.color * math.clamp(globals.lightBrightness, .25, 1) *
             rgbm(1, 1, 1, stages[3])
         )
     end
@@ -382,7 +382,7 @@ function Tacho()
             radius,
             { 0, 0 },
             self.settings.value.width,
-            fuelColor * globals.lightBrightness *
+            fuelColor * math.clamp(globals.lightBrightness, .25, 1) *
             rgbm(1, 1, 1, stages[3])
         )
     end
@@ -427,30 +427,38 @@ function Tacho()
             self.settings.value.background.color * rgbm(1, 1, 1, stages[1])
         )
 
+        local hardRedlineOffset = self.settings.redline.hard.offset
+        if not focusedCar.headlightsActive then
+            hardRedlineOffset = self.settings.redline.soft.offset
+        end
+
         -- hard redline
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
             -self.settings.valueRange.span * ((maxValue - focusedCar.rpmLimiter) / maxValue) *
             stages[4],
-            (self.settings.radius + self.settings.redline.hard.offset + self.settings.value.background.width / 2),
+            (self.settings.radius + hardRedlineOffset + self.settings.value.background.width / 2),
             { self.settings.redline.hard.pinLengths[1] * stages[4], self.settings.redline.hard.pinLengths[2] * stages[5] },
             self.settings.redline.hard.width,
             self.settings.redline.hard.color * rgbm(1, 1, 1, globals.lightBrightness * stages[3])
         )
 
         -- Soft redline
-        draw.DrawArc(
-            windowCenter,
-            self.settings.valueRange.begin + self.settings.valueRange.span,
-            -self.settings.valueRange.span *
-            (maxValue - focusedCar.rpmLimiter + self.settings.redline.soft.rpms) / maxValue *
-            stages[4],
-            (self.settings.radius + self.settings.redline.soft.offset + self.settings.value.background.width / 2),
-            { self.settings.redline.soft.pinLengths[1] * stages[4], self.settings.redline.soft.pinLengths[2] * stages[4] },
-            self.settings.redline.soft.width,
-            self.settings.redline.soft.color * rgbm(1, 1, 1, globals.lightBrightness * stages[3])
-        )
+        if focusedCar.headlightsActive then
+            draw.DrawArc(
+                windowCenter,
+                self.settings.valueRange.begin + self.settings.valueRange.span,
+                -self.settings.valueRange.span *
+                (maxValue - focusedCar.rpmLimiter + self.settings.redline.soft.rpms) / maxValue *
+                stages[4],
+                (self.settings.radius + self.settings.redline.soft.offset + self.settings.value.background.width / 2),
+                { self.settings.redline.soft.pinLengths[1] * stages[4], self.settings.redline.soft.pinLengths[2] *
+                stages[4] },
+                self.settings.redline.soft.width,
+                self.settings.redline.soft.color * rgbm(1, 1, 1, globals.lightBrightness * stages[3])
+            )
+        end
 
         local gradientColor = rgbm(
             self.settings.value.gradient.color.r + softLimitRatio,
@@ -460,24 +468,26 @@ function Tacho()
         ) * globals.lightBrightness * stages[5]
 
         -- Value Gradient
-        ui.beginPremultipliedAlphaTexture()
-        ui.beginTextureShade(self.gradientCanvas)
-        draw.DrawArc(
-            windowCenter,
-            self.settings.valueRange.begin,
-            self.settings.valueRange.span * gaugeValueRatio,
-            self.settings.radius * .5,
-            { 0, 0 },
-            self.settings.radius,
-            gradientColor,
-            false
-        )
-        ui.endTextureShade(
-        -- Account for outside padding
-            windowSize.x / 2 - self.settings.radius,
-            windowSize.x - (windowSize.x / 2 - self.settings.radius)
-        )
-        ui.endPremultipliedAlphaTexture()
+        if focusedCar.headlightsActive then
+            ui.beginPremultipliedAlphaTexture()
+            ui.beginTextureShade(self.gradientCanvas)
+            draw.DrawArc(
+                windowCenter,
+                self.settings.valueRange.begin,
+                self.settings.valueRange.span * gaugeValueRatio,
+                self.settings.radius * .5,
+                { 0, 0 },
+                self.settings.radius,
+                gradientColor,
+                false
+            )
+            ui.endTextureShade(
+            -- Account for outside padding
+                windowSize.x / 2 - self.settings.radius,
+                windowSize.x - (windowSize.x / 2 - self.settings.radius)
+            )
+            ui.endPremultipliedAlphaTexture()
+        end
 
 
         DrawRevNums()
@@ -500,15 +510,19 @@ function Tacho()
             false
         )
 
+        local needlePinLen = self.settings.value.pinLengths[2]
+        if not focusedCar.headlightsActive then
+            needlePinLen = 0
+        end
         -- Value Needle
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin,
             self.settings.valueRange.span * gaugeValueRatio * stages[4],
             (self.settings.radius + self.settings.value.width / 2),
-            { self.settings.value.pinLengths[1] * stages[4], self.settings.value.pinLengths[2] * stages[4] },
+            { self.settings.value.pinLengths[1] * stages[4], needlePinLen * stages[4] },
             self.settings.value.width,
-            self.settings.value.color * globals.lightBrightness *
+            self.settings.value.color * math.clamp(globals.lightBrightness, .75, 1) *
             rgbm(1, 1, 1, stages[3])
         )
 

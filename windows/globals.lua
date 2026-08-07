@@ -1,11 +1,15 @@
-function Globals()
-    local globals = {}
-    globals.Sim = ac.getSim()
-    globals.focusedCar = ac.getCar(globals.Sim.focusedCar)
+local function Utils()
+    local self = {}
 
-    globals.numSegments = 64
+    ---@type ac.StateSim
+    Sim = ac.getSim()
 
-    globals.lightBrightness = 0.1
+    ---@type ac.StateCar?
+    FocusedCar = ac.getCar(Sim.focusedCar)
+
+    self.numSegments = 64
+
+    self.lightBrightness = 0.1
 
     ---Class for drawing gauges
     function Draw()
@@ -28,7 +32,7 @@ function Globals()
 
         function draw._handleStartup(dt)
             -- If player is in setup screen
-            if globals.Sim.cameraMode == ac.CameraMode.Start then return end
+            if Sim.cameraMode == ac.CameraMode.Start then return end
 
             if draw.startup.startupStage <= #draw.startup.startupModifiers and draw.startup.startupCurrentTime > 0 then
                 draw.startup.startupCurrentTime = draw.startup.startupCurrentTime - dt
@@ -69,7 +73,7 @@ function Globals()
                 center,
                 radius,
                 color,
-                globals.numSegments
+                self.numSegments
             )
         end
 
@@ -126,7 +130,7 @@ function Globals()
                     pos,
                     width / 2,
                     color,
-                    globals.numSegments
+                    self.numSegments
                 )
             end
 
@@ -144,7 +148,7 @@ function Globals()
                 radius,
                 math.rad(begin + 90),
                 math.rad(begin + span + 90),
-                globals.numSegments
+                self.numSegments
             )
             -- Pin
             pos = vec2(
@@ -166,7 +170,7 @@ function Globals()
                     pos,
                     width / 2,
                     color,
-                    globals.numSegments
+                    self.numSegments
                 )
             end
 
@@ -230,7 +234,7 @@ function Globals()
             width = width / 2
 
             gradientCanvas:update(function()
-                local segments = globals.numSegments
+                local segments = self.numSegments
                 local shades = segments
                 for i = 1, shades, 1 do
                     ui.drawCircle(
@@ -271,7 +275,7 @@ function Globals()
             if brightness == nil then brightness = 1 end
 
             gradientCanvas:update(function()
-                local segments = globals.numSegments
+                local segments = self.numSegments
                 local shades = segments
                 for i = 1, shades, 1 do
                     ui.drawRectFilled(
@@ -310,7 +314,7 @@ function Globals()
             if brightness == nil then brightness = 1 end
 
             gradientCanvas:update(function()
-                local segments = globals.numSegments
+                local segments = self.numSegments
                 local shades = segments
                 for i = 1, shades, 1 do
                     ui.drawRectFilled(
@@ -331,13 +335,13 @@ function Globals()
         return draw
     end
 
-    globals.draw = Draw()
+    self.draw = Draw()
 
-    globals.draw.horizontalGradient = globals.draw.HorizontalGradient(512, 1, "Horizontal Gradient")
-    globals.draw.verticalGradient = globals.draw.VerticalGradient(1024, 1, "Vertical Gradient")
+    self.draw.horizontalGradient = self.draw.HorizontalGradient(512, 1, "Horizontal Gradient")
+    self.draw.verticalGradient = self.draw.VerticalGradient(1024, 1, "Vertical Gradient")
 
-    function globals.update(dt)
-        globals.draw._handleStartup(dt)
+    function self.update(dt)
+        self.draw._handleStartup(dt)
 
         local sunAngle = ac.getSunAngle()
         ac.debug("SunAngle", sunAngle)
@@ -345,14 +349,14 @@ function Globals()
         local sunBrightnessMod = math.clamp(1 - (sunAngle / 95), 0, .25) / .25
         ac.debug("Sun Angle mod", sunBrightnessMod)
 
-        if globals.focusedCar.headlightsActive then
-            globals.lightBrightness = 1
+        if FocusedCar.headlightsActive then
+            self.lightBrightness = 1
         else
-            globals.lightBrightness = sunBrightnessMod
+            self.lightBrightness = sunBrightnessMod
         end
     end
 
-    return globals
+    return self
 end
 
-return Globals()
+return Utils()

@@ -1,13 +1,10 @@
-local globals = require("windows.globals")
-local sim = globals.Sim
-local focusedCar = globals.focusedCar
-if focusedCar == nil then
+if FocusedCar == nil then
     ac.debug("ERROR", "No focused car found for media")
     return
 end
 
 
-function Media()
+local function Media()
     local self = {}
 
     local windowCenter = vec2()
@@ -22,21 +19,23 @@ function Media()
     local function DrawInfo()
         -- Album cover
 
-        ui.beginTextureShade(currentlyPlaying)
-        globals.draw.RectBackground(0, windowCenter.y * 2,
-            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[2]), 5,
-            ui.CornerFlags.Left)
-        ui.endTextureShade(0, windowCenter.y * 2, true)
+        if currentlyPlaying.hasCover then
+            ui.beginTextureShade(currentlyPlaying) --ac.MusicData can be passed to render an album cover
+            Globals.draw.RectBackground(0, windowCenter.y * 2,
+                rgbm(1, 1, 1, 1 * Globals.lightBrightness * Globals.draw.startup.startupModifiers[2]), 5,
+                ui.CornerFlags.Left)
+            ui.endTextureShade(0, windowCenter.y * 2, true)
+        end
 
         ui.pushDWriteFont(
             "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Regular")
         if currentlyPlaying.trackDuration < 0 then
             -- Nothing playing
-            globals.draw.DrawText(
-                vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5 * globals.draw.startup.startupModifiers[4]),
+            Globals.draw.DrawText(
+                vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5 * Globals.draw.startup.startupModifiers[4]),
                 "Nothing playing",
                 10,
-                rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[4]),
+                rgbm(1, 1, 1, 1 * Globals.lightBrightness * Globals.draw.startup.startupModifiers[4]),
                 vec2(0, .5)
             )
             ui.popDWriteFont()
@@ -46,17 +45,17 @@ function Media()
 
         -- Progress
         ui.beginPremultipliedAlphaTexture()
-        ui.beginTextureShade(globals.draw.horizontalGradient)
+        ui.beginTextureShade(Globals.draw.horizontalGradient)
         ui.drawRectFilled(
             vec2(windowCenter.y * 2, 0),
             windowCenter.y * 2 +
             vec2(
                 (currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) *
-                globals.draw.startup.startupModifiers[3] *
+                Globals.draw.startup.startupModifiers[3] *
                 ((windowCenter.x * 2 - windowCenter.y * 2)),
                 0
             ),
-            rgbm(1, 0, 1, 1) * globals.lightBrightness
+            rgbm(1, 0, 1, 1) * Globals.lightBrightness
         )
         ui.endTextureShade(
             vec2(windowCenter.y * 2, 0),
@@ -73,7 +72,7 @@ function Media()
             windowCenter.y * 2 - vec2(0, 3),
             windowCenter.y * 2 +
             vec2(
-                globals.draw.startup.startupModifiers[3] *
+                Globals.draw.startup.startupModifiers[3] *
                 (windowCenter.x * 2 - windowCenter.y * 2), 0),
             rgbm(1, 1, 1, .1)
         )
@@ -84,26 +83,26 @@ function Media()
             windowCenter.y * 2 +
             vec2(
                 (currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) *
-                globals.draw.startup.startupModifiers[3] *
+                Globals.draw.startup.startupModifiers[3] *
                 (windowCenter.x * 2 - windowCenter.y * 2), 0),
-            rgbm(1, 0, 1, 1 * globals.lightBrightness)
+            rgbm(1, 0, 1, 1 * Globals.lightBrightness)
         )
 
         -- Text
 
-        globals.draw.DrawText(
-            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, -8 * globals.draw.startup.startupModifiers[3]),
+        Globals.draw.DrawText(
+            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, -8 * Globals.draw.startup.startupModifiers[3]),
             currentlyPlaying.title,
             12,
-            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[3]),
+            rgbm(1, 1, 1, 1 * Globals.lightBrightness * Globals.draw.startup.startupModifiers[3]),
             vec2(0, .5)
         )
 
-        globals.draw.DrawText(
-            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5 * globals.draw.startup.startupModifiers[4]),
+        Globals.draw.DrawText(
+            vec2(windowCenter.y * 2, windowCenter.y) + vec2(5, 5 * Globals.draw.startup.startupModifiers[4]),
             artistString,
             10,
-            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[4]),
+            rgbm(1, 1, 1, 1 * Globals.lightBrightness * Globals.draw.startup.startupModifiers[4]),
             vec2(0, .5)
         )
 
@@ -117,12 +116,12 @@ function Media()
 
         local totalDurationString = trackPositionString .. " / " .. trackDurationString
 
-        globals.draw.DrawText(
+        Globals.draw.DrawText(
             vec2(0, windowCenter.y) +
-            vec2(windowCenter.x * 2 - 5, 5 * globals.draw.startup.startupModifiers[4]),
+            vec2(windowCenter.x * 2 - 5, 5 * Globals.draw.startup.startupModifiers[4]),
             totalDurationString,
             10,
-            rgbm(1, 1, 1, 1 * globals.lightBrightness * globals.draw.startup.startupModifiers[4]),
+            rgbm(1, 1, 1, 1 * Globals.lightBrightness * Globals.draw.startup.startupModifiers[4]),
             vec2(1, .5)
         )
 
@@ -133,8 +132,8 @@ function Media()
         windowCenter = ui.windowSize() / 2
         currentlyPlaying = ac.currentlyPlaying()
 
-        globals.draw.RectBackground(0, windowCenter * 2,
-            settings.backgroundColor * rgbm(1, 1, 1, globals.draw.startup.startupModifiers[1]), 5)
+        Globals.draw.RectBackground(0, windowCenter * 2,
+            settings.backgroundColor * rgbm(1, 1, 1, Globals.draw.startup.startupModifiers[1]), 5)
 
         DrawInfo()
 

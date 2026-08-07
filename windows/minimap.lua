@@ -1,12 +1,10 @@
-local globals = require("windows.globals")
-local focusedCar = globals.focusedCar
-if focusedCar == nil then
+if FocusedCar == nil then
     ac.debug("ERROR", "No focused car found for minimap")
     return
 end
 
 
-function Minimap()
+local function Minimap()
     local self = {}
 
     local trackData
@@ -110,14 +108,14 @@ function Minimap()
 
         ui.endOutline(rgbm(0, 0, 0, 1), 1)
 
-        if car.index == focusedCar.index or car:driverName():lower():startsWith("traffic") then return end
+        if car.index == FocusedCar.index or car:driverName():lower():startsWith("traffic") then return end
 
         local nameOffset = vec2(0, 10)
 
         ui.beginRotation()
         ui.beginOutline()
 
-        globals.draw.DrawText(carPos + nameOffset * nameScale, car:driverName():split(" ")[1], 10 * nameScale,
+        Globals.draw.DrawText(carPos + nameOffset * nameScale, car:driverName():split(" ")[1], 10 * nameScale,
             rgbm(1, 1, 1, 1))
 
         ui.endOutline(rgbm(0, 0, 0, 1), 1)
@@ -127,7 +125,7 @@ function Minimap()
     local function DrawMapCentred()
         local windowCenter = ui.windowSize() / 2
 
-        local playerMapPos = vec2(focusedCar.position.x, focusedCar.position.z) + trackData.offset
+        local playerMapPos = vec2(FocusedCar.position.x, FocusedCar.position.z) + trackData.offset
         local trackDrawPos = windowCenter - playerMapPos / trackData.config.SCALE_FACTOR * displayZoom
 
         local camForward = ac.getCameraForward()
@@ -148,11 +146,11 @@ function Minimap()
             "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=Regular;Style=Regular")
         for _, car in ac.iterateCars() do
             -- We want to draw focused car last for it to be on top
-            if car.index == focusedCar.index then goto continue end
+            if car.index == FocusedCar.index then goto continue end
             DrawCar(car, trackDrawPos)
             ::continue::
         end
-        DrawCar(focusedCar, trackDrawPos, focusedCarScale)
+        DrawCar(FocusedCar, trackDrawPos, FocusedCarScale)
         ui.popDWriteFont()
 
         ui.endPivotRotation(-focusedCarCamRotation - 90, windowCenter)
@@ -169,7 +167,7 @@ function Minimap()
         mapCentredCanvas:clear()
         mapCentredCanvas:update(DrawMapCentred)
 
-        globals.draw.RectBackground(
+        Globals.draw.RectBackground(
             4,
             windowCenter * 2 - 4,
             rgbm(0, 0, 0, .125),
@@ -188,7 +186,7 @@ function Minimap()
         ui.drawRectFilled(
             4,
             windowCenter * 2 - 4,
-            rgbm(1, 1, 1, 1 * globals.lightBrightness),
+            rgbm(1, 1, 1, 1 * Globals.lightBrightness),
             5
         )
         ui.endTextureShade(0, windowCenter * 2)

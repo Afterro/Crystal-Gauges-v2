@@ -12,7 +12,7 @@ local function Utils()
     self.lightBrightness = 0.1
 
     ---Class for drawing gauges
-    function Draw()
+    local function Draw()
         local draw = {}
 
         draw.startup = {
@@ -22,7 +22,7 @@ local function Utils()
             startupStageLenght = .75,
             -- Current stage time
             startupCurrentTime = 0,
-            -- Modifiers for each stage
+            -- Modifiers for each startup stage
             startupModifiers = { 0, 0, 0, 0, 0 },
             -- Current stage
             startupStage = 1,
@@ -359,4 +359,6 @@ local function Utils()
     return self
 end
 
-return Utils()
+Globals = Utils()
+
+return Globals

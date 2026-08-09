@@ -1,5 +1,5 @@
 -- Instanciate gauges
-Globals = require("windows.Globals")
+local globals = require("windows.Globals")
 
 local tacho = require("windows.tacho")
 local minimap = require("windows.minimap")
@@ -32,5 +32,5 @@ end
 
 -- optional, standard available function
 function script.update(dt)
-    Globals.update(dt)
+    globals.update(dt)
 end

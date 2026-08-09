@@ -150,7 +150,7 @@ local function Minimap()
             DrawCar(car, trackDrawPos)
             ::continue::
         end
-        DrawCar(FocusedCar, trackDrawPos, FocusedCarScale)
+        DrawCar(FocusedCar, trackDrawPos, focusedCarScale)
         ui.popDWriteFont()
 
         ui.endPivotRotation(-focusedCarCamRotation - 90, windowCenter)

@@ -231,18 +231,20 @@ local function Utils()
             if brightness == nil then brightness = 1 end
 
             local center = resolution / 2
-            width = width / 2
 
             gradientCanvas:update(function()
-                local segments = self.numSegments
-                local shades = segments
-                for i = 1, shades, 1 do
+                local shades = 128
+                local shadeWidth = 1 / shades * width
+                local r = resolution / 2
+                local linearity = 2
+                for i = 0, shades, 1 do
+                    local alpha = (1 - i / shades) ^ linearity * brightness
                     ui.drawCircle(
                         center,
-                        resolution / 2 - (width / 2) * (i / shades),
-                        rgbm(1, 1, 1, 1 / shades * brightness),
-                        segments,
-                        width * (i / shades)
+                        r - (i / shadeWidth),
+                        rgbm(1, 1, 1, alpha),
+                        self.numSegments,
+                        shadeWidth
                     )
                 end
             end
@@ -346,7 +348,7 @@ local function Utils()
         local sunAngle = ac.getSunAngle()
         ac.debug("SunAngle", sunAngle)
 
-        local sunBrightnessMod = math.clamp(1 - (sunAngle / 95), 0, .25) / .25
+        local sunBrightnessMod = math.clamp(1 - (sunAngle / 100), 0, .25) / .25
         ac.debug("Sun Angle mod", sunBrightnessMod)
 
         if FocusedCar.headlightsActive then

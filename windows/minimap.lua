@@ -93,7 +93,7 @@ local function Minimap()
             color = rgbm(1, 1, 0, 1)
         end
         if ac.DriverTags(car:driverName()).friend then
-            color = rgbm(0, 0.25, 1, 1)
+            color = rgbm(0, 1, 1, 1)
         end
         if car.isUserControlled then
             color = rgbm(1, 0, 1, 1)
@@ -102,7 +102,7 @@ local function Minimap()
         ui.beginOutline()
         ui.beginRotation()
 
-        ui.drawIcon(ui.Icons.UpAlt, carPos - 5 * displayCarScale, carPos + 5 * displayCarScale, color)
+        ui.drawIcon(ui.Icons.Eject, carPos - 5 * displayCarScale, carPos + 5 * displayCarScale, color)
 
         ui.endRotation(carRotation - 90)
 
@@ -170,13 +170,13 @@ local function Minimap()
         Globals.draw.RectBackground(
             4,
             windowCenter * 2 - 4,
-            rgbm(0, 0, 0, .125),
+            rgbm(0, 0, 0, .25),
             5
         )
         ui.drawRect(
             2,
             windowCenter * 2 - 2,
-            rgbm(1, 1, 1, .1),
+            rgbm(0, 0, 0, .125),
             5,
             ui.CornerFlags.All,
             4
@@ -212,7 +212,6 @@ local function Minimap()
                 displayZoom = math.clamp(displayZoom, .05, 20)
                 ui.text("Zoom: " .. stringify(displayZoom))
             end
-
             ui.drawRect(vec2(0, 0),
                 windowCenter * 2,
                 rgbm(1, 1, 1, 1),

@@ -19,18 +19,19 @@ local function Inputs()
     local sinceLastReportMs = 0
     local inputReportRangeSec = 3
     local framerate = 60
+    local totalReports = framerate * inputReportRangeSec
 
-    local throttle = table.new(framerate * inputReportRangeSec, 0)
-    local brake = table.new(framerate * inputReportRangeSec, 0)
-    local clutch = table.new(framerate * inputReportRangeSec, 0)
-    local handbrake = table.new(framerate * inputReportRangeSec, 0)
-    local ffb = table.new(framerate * inputReportRangeSec, 0)
+    local throttle = table.new(totalReports, 0)
+    local brake = table.new(totalReports, 0)
+    local clutch = table.new(totalReports, 0)
+    local handbrake = table.new(totalReports, 0)
+    local ffb = table.new(totalReports, 0)
 
     local function cleanUpTelemetry(telemetry)
-        if table.nkeys(telemetry) > framerate * inputReportRangeSec then
+        if table.nkeys(telemetry) > totalReports then
             table.remove(telemetry, 1)
-        elseif table.nkeys(telemetry) < framerate * inputReportRangeSec then
-            for i = 1, framerate * inputReportRangeSec, 1 do
+        elseif table.nkeys(telemetry) < totalReports then
+            for i = 1, totalReports, 1 do
                 telemetry[i] = 0
             end
         end
@@ -50,7 +51,7 @@ local function Inputs()
         for curr = 1, table.nkeys(values) do
             local value = values[curr]
             if inverse then value = value else value = 1 - value end
-            pathPos:set(curr / (framerate * inputReportRangeSec), value) -- Helps with GC - Yeah I looked at CMRT for optimization since I was at .5ms dt at one point... Gotta learn somehow i guess.
+            pathPos:set(curr / totalReports, value) -- Helps with GC - Yeah I looked at CMRT for optimization since I was at .5ms dt at one point... Gotta learn somehow i guess.
             ui.pathLineTo(p1 + p2 * pathPos + vec2(1, 0))
         end
         ui.pathStroke(color, false, self.settings.strokeWidth)

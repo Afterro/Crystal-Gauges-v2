@@ -9,7 +9,11 @@ local function Utils()
 
     self.numSegments = 64
 
+    --Sun angle dependant modifier
     self.lightBrightness = 0.1
+    --Interpolated like lightBrightness but is not dependant on sun angle
+    self.lightSwitchMod = 0
+    self.lightSwitchModLerp = .025
 
     ---Class for drawing gauges
     local function Draw()
@@ -346,16 +350,19 @@ local function Utils()
         self.draw._handleStartup(dt)
 
         local sunAngle = ac.getSunAngle()
-        ac.debug("SunAngle", sunAngle)
+        ac.debug("Sun Angle", sunAngle)
 
         local sunBrightnessMod = math.clamp(1 - (sunAngle / 100), 0, .25) / .25
-        ac.debug("Sun Angle mod", sunBrightnessMod)
+        ac.debug("Sun Angle modifier", sunBrightnessMod)
 
-        if FocusedCar.headlightsActive then
-            self.lightBrightness = 1
+        if FocusedCar.headlightsActive or FocusedCar.highBeams then
+            self.lightSwitchMod = math.lerp(self.lightSwitchMod, 1, self.lightSwitchModLerp)
+            self.lightBrightness = math.lerp(self.lightBrightness, 1, self.lightSwitchModLerp)
         else
-            self.lightBrightness = sunBrightnessMod
+            self.lightBrightness = math.lerp(self.lightBrightness, sunBrightnessMod, self.lightSwitchModLerp)
+            self.lightSwitchMod = math.lerp(self.lightSwitchMod, 0, self.lightSwitchModLerp)
         end
+        ac.debug("Light Switch modifier", self.lightSwitchMod)
     end
 
     return self

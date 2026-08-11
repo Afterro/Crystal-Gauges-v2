@@ -9,6 +9,8 @@ local function Tacho()
     -- Values updated often or car dependant
     -- Value needle ratio over the whole gauge range
     local gaugeValueRatio = .5
+    -- currentRPM after interpolation
+    local currentRPM = 0
     -- Max value for this gauge
     local maxValue = math.ceil(FocusedCar.rpmLimiter / 1000) * 1000
     local maxBoost = 0
@@ -22,7 +24,7 @@ local function Tacho()
 
     self.settings = {
         radius = 100,
-        backgroundColor = rgbm(0, 0, 0, 0),
+        backgroundColor = rgbm(0, 0, 0, .1),
         valueRange = {
             begin = 90,
             span = 270
@@ -42,18 +44,19 @@ local function Tacho()
             },
             highlight = {
                 enabled = true,
-                color = rgbm(.6, 0, 1, 1),
+                color = rgbm(.5, 0, 1, 1),
                 offset = -3,
                 width = 3
             },
             gradient = {
                 enabled = true,
                 width = 50,
-                color = rgbm(.6, 0, 1, .5)
+                color = rgbm(.5, 0, 1, .5)
             }
         },
         redline = {
             soft = {
+                enabled = true,
                 rpms = 1000,
                 color = rgbm(.75, 0, 0, 1),
                 pinLengths = { 5, 0 },
@@ -61,6 +64,7 @@ local function Tacho()
                 width = 3
             },
             hard = {
+                enabled = true,
                 color = rgbm(.5, 0, 0, 1),
                 pinLengths = { 0, 0 },
                 offset = -3,
@@ -68,13 +72,14 @@ local function Tacho()
             }
         },
         revNumbers = {
+            enabled = true,
             color = rgbm(.9, .9, .9, 1),
             size = 14,
             offset = 16
         }
     }
 
-    local stages = {}
+    local startupStages = {}
 
     local windowSize = vec2()
     local windowCenter = vec2()
@@ -89,18 +94,18 @@ local function Tacho()
 
 
     local function DrawSpeedAndGear()
-        local textColor = rgbm(1, 1, 1, Globals.lightBrightness * stages[4])
+        local textColor = rgbm(1, 1, 1, Globals.lightBrightness * startupStages[4])
         local speedSystem = "KM/H"
         if FocusedCar.prefersImperialUnits then
             speedSystem = "MPH"
         end
         draw.DrawText(
-            windowCenter + vec2(0, -50) * math.clamp(stages[4] + .75, 0, 1),
+            windowCenter + vec2(0, -50) * math.clamp(startupStages[4] + .75, 0, 1),
             speedSystem,
             9,
             textColor
         )
-        local barColor = rgbm(1, 1, 1, Globals.lightBrightness * stages[3])
+        local barColor = rgbm(1, 1, 1, Globals.lightBrightness * startupStages[3])
         local speedTextSize = 44
 
         local speed = math.round(FocusedCar.poweredWheelsSpeed)
@@ -109,7 +114,7 @@ local function Tacho()
         end
 
         draw.DrawText(
-            windowCenter + vec2(0, -24) * math.clamp(stages[4] + .75, 0, 1),
+            windowCenter + vec2(0, -24) * math.clamp(startupStages[4] + .75, 0, 1),
             stringify(speed),
             speedTextSize,
             textColor
@@ -118,14 +123,14 @@ local function Tacho()
 
         ui.drawEllipseFilled(
             windowCenter + vec2(0, 5),
-            vec2(32 * stages[3], 1),
+            vec2(32 * startupStages[3], 1),
             barColor,
             Globals.numSegments
         )
 
         local gearNum = math.round(FocusedCar.engagedGear)
         local gear = stringify(gearNum)
-        local gearPos = windowCenter + vec2(0, 26) * math.clamp(stages[4] + .75, 0, 1)
+        local gearPos = windowCenter + vec2(0, 26) * math.clamp(startupStages[4] + .75, 0, 1)
         local gearTextSize = 34
         if gearNum == 0 then
             gear = "N"
@@ -158,19 +163,17 @@ local function Tacho()
                     math.sin(math.rad(90 + self.settings.valueRange.begin +
                         (self.settings.valueRange.span / gaugeMaxDisplayValue) *
                         i))
-                ) * (self.settings.radius - self.settings.revNumbers.offset) * math.clamp(stages[3] + .5, 0, 1) +
+                ) * (self.settings.radius - self.settings.revNumbers.offset) * math.clamp(startupStages[3] + .5, 0, 1) +
                 windowCenter
 
             draw.DrawText(pos, stringify(i), self.settings.revNumbers.size,
-                self.settings.revNumbers.color * rgbm(1, 1, 1, stages[3] * Globals.lightBrightness))
+                self.settings.revNumbers.color * rgbm(1, 1, 1, startupStages[3] * Globals.lightBrightness))
 
-            if FocusedCar.headlightsActive then
-                ui.glowCircleFilled(
-                    pos,
-                    self.settings.revNumbers.size / 2,
-                    rgbm(1, 1, 1, 1) * rgbm(1, 1, 1, stages[3])
-                )
-            end
+            ui.glowCircleFilled(
+                pos,
+                self.settings.revNumbers.size / 2,
+                rgbm(1, 1, 1, 1) * rgbm(1, 1, 1, startupStages[3] * Globals.lightSwitchMod)
+            )
         end
 
         ui.popDWriteFont()
@@ -179,13 +182,13 @@ local function Tacho()
     -- TODO:
     -- Move to a dedicated app
     local function DrawIndicators()
-        local backgroundColor = rgbm(0, 0, 0, .1 * stages[5] * Globals.lightBrightness)
-        local indicatorsRadius = 115
+        local backgroundColor = rgbm(0, 0, 0, .1 * startupStages[5] * Globals.lightBrightness)
+        local indicatorsRadius = 110
         local indicatorsSize = 5
 
         -- High beams indicator
-        local lightsPos = draw.GetPosRadial(0, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
-        local lightsColor = rgbm(0, .25, 1, .75 * stages[5])
+        local lightsPos = draw.GetPosRadial(0, indicatorsRadius * math.clamp(startupStages[5] + .75, 0, 1))
+        local lightsColor = rgbm(0, .25, 1, .75 * startupStages[5])
 
         ui.drawCircleFilled(
             windowCenter + lightsPos,
@@ -204,8 +207,8 @@ local function Tacho()
         --     windowCenter + lightsPos + indicatorsSize / 2, rgbm(1, 1, 1, 1))
 
         -- Left turn indicator
-        local lightsPos = draw.GetPosRadial(-7, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
-        local turningColor = rgbm(0, 1, 0, .75 * stages[5])
+        local lightsPos = draw.GetPosRadial(-7, indicatorsRadius * math.clamp(startupStages[5] + .75, 0, 1))
+        local turningColor = rgbm(0, 1, 0, .75 * startupStages[5])
 
         ui.drawCircleFilled(
             windowCenter + lightsPos,
@@ -221,7 +224,7 @@ local function Tacho()
         end
 
         -- Right turn indicator
-        local lightsPos = draw.GetPosRadial(7, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
+        local lightsPos = draw.GetPosRadial(7, indicatorsRadius * math.clamp(startupStages[5] + .75, 0, 1))
 
         ui.drawCircleFilled(
             windowCenter + lightsPos,
@@ -237,8 +240,8 @@ local function Tacho()
         end
 
         -- Fuel indicator
-        local lightsPos = draw.GetPosRadial(14, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
-        local fuelColor = rgbm(1, 1, 0, .75 * stages[5])
+        local lightsPos = draw.GetPosRadial(14, indicatorsRadius * math.clamp(startupStages[5] + .75, 0, 1))
+        local fuelColor = rgbm(1, 1, 0, .75 * startupStages[5])
 
         ui.drawCircleFilled(
             windowCenter + lightsPos,
@@ -254,8 +257,8 @@ local function Tacho()
         end
 
         -- Handbrake indicator
-        local lightsPos = draw.GetPosRadial(-14, indicatorsRadius * math.clamp(stages[5] + .75, 0, 1))
-        local brakeColor = rgbm(1, 0, 0, .75 * stages[5])
+        local lightsPos = draw.GetPosRadial(-14, indicatorsRadius * math.clamp(startupStages[5] + .75, 0, 1))
+        local brakeColor = rgbm(1, 0, 0, .75 * startupStages[5])
 
         ui.drawCircleFilled(
             windowCenter + lightsPos,
@@ -295,7 +298,7 @@ local function Tacho()
 
         local gap             = 2
 
-        local stageColorMod   = rgbm(1, 1, 1, stages[5])
+        local stageColorMod   = rgbm(1, 1, 1, startupStages[5])
         local odoColor        = rgbm(1, 1, 1, Globals.lightBrightness) * stageColorMod
         local odoColorDecimal = self.settings.value.highlight.color * rgbm(1, 1, 1, Globals.lightBrightness) *
             stageColorMod
@@ -308,8 +311,8 @@ local function Tacho()
         local rectSize     = vec2((centerOffset + halfFont) * 2, fontSize)
         -- Bacakground
         ui.drawRectFilled(
-            windowCenter - rectSize / 2 + position * math.clamp(stages[5] + .75, 0, 1),
-            windowCenter + rectSize / 2 + vec2(0, 2) + position * math.clamp(stages[5] + .75, 0, 1),
+            windowCenter - rectSize / 2 + position * math.clamp(startupStages[5] + .75, 0, 1),
+            windowCenter + rectSize / 2 + vec2(0, 2) + position * math.clamp(startupStages[5] + .75, 0, 1),
             rgbm(0, 0, 0, .125) * rgbm(1, 1, 1, Globals.lightBrightness) * stageColorMod,
             5
         )
@@ -330,7 +333,7 @@ local function Tacho()
 
             -- Text
             draw.DrawText(
-                windowCenter + position * math.clamp(stages[5] + .75, 0, 1) + offset,
+                windowCenter + position * math.clamp(startupStages[5] + .75, 0, 1) + offset,
                 num,
                 fontSize,
                 finalColor
@@ -343,7 +346,7 @@ local function Tacho()
         if FocusedCar.turboCount < 1 then return end
         local boostBegin = -90 + 45 / 2
         local boostSpan = -45
-        local radius = (self.settings.radius + 10) * stages[1]
+        local radius = (self.settings.radius + 10) * startupStages[1]
 
         local currentBoost = FocusedCar.turboBoost
         if currentBoost > maxBoost then maxBoost = currentBoost end
@@ -356,41 +359,41 @@ local function Tacho()
         draw.DrawArc(
             windowCenter,
             boostBegin,
-            boostSpan * stages[4],
+            boostSpan * startupStages[4],
             radius,
             { 0, 0 },
             self.settings.value.background.width,
-            self.settings.value.background.color * rgbm(1, 1, 1, stages[1])
+            self.settings.value.background.color * rgbm(1, 1, 1, startupStages[1])
         )
 
         -- Value Needle
         draw.DrawArc(
             windowCenter,
             boostBegin,
-            boostSpan * boostRatio * stages[4],
+            boostSpan * boostRatio * startupStages[4],
             radius,
             { 0, 0 },
             self.settings.value.width,
             self.settings.value.color * math.clamp(Globals.lightBrightness, .25, 1) *
-            rgbm(1, 1, 1, stages[3])
+            rgbm(1, 1, 1, startupStages[3])
         )
     end
 
     local function DrawFuel()
         local fuelBegin = 45 / 2
         local fuelSpan = 45
-        local radius = (self.settings.radius) * stages[1]
+        local radius = (self.settings.radius) * startupStages[1]
         local fuelRatio = FocusedCar.fuel / FocusedCar.maxFuel
 
         -- Background
         draw.DrawArc(
             windowCenter,
             fuelBegin,
-            fuelSpan * stages[4],
+            fuelSpan * startupStages[4],
             radius,
             { 0, 0 },
             self.settings.value.background.width,
-            self.settings.value.background.color * rgbm(1, 1, 1, stages[1])
+            self.settings.value.background.color * rgbm(1, 1, 1, startupStages[1])
         )
 
         local fuelColor = self.settings.value.color
@@ -401,20 +404,20 @@ local function Tacho()
         draw.DrawArc(
             windowCenter,
             fuelBegin,
-            fuelSpan * fuelRatio * stages[4],
+            fuelSpan * fuelRatio * startupStages[4],
             radius,
             { 0, 0 },
             self.settings.value.width,
             fuelColor * math.clamp(Globals.lightBrightness, .25, 1) *
-            rgbm(1, 1, 1, stages[3])
+            rgbm(1, 1, 1, startupStages[3])
         )
     end
 
     local function DrawGauge()
         draw.RoundBackground(
             windowCenter,
-            self.settings.radius * stages[1],
-            self.settings.backgroundColor * rgbm(1, 1, 1, stages[1])
+            self.settings.radius * startupStages[1],
+            self.settings.backgroundColor * rgbm(1, 1, 1, startupStages[1])
         )
         ui.pushDWriteFont(
             "Varien:assets/fonts/Varien.ttf;Weight=400;Style=Regular")
@@ -430,44 +433,45 @@ local function Tacho()
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin,
-            self.settings.valueRange.span * stages[2],
-            (self.settings.radius + self.settings.value.background.width / 2) * stages[1],
-            { self.settings.value.background.pinLengths[1] * stages[1], self.settings.value.background.pinLengths[2] *
-            stages[2] },
+            self.settings.valueRange.span * startupStages[2],
+            (self.settings.radius + self.settings.value.background.width / 2) * startupStages[1],
+            { self.settings.value.background.pinLengths[1] * startupStages[1], self.settings.value.background.pinLengths
+            [2] *
+            startupStages[2] },
             self.settings.value.background.width,
-            self.settings.value.background.color * rgbm(1, 1, 1, stages[1] * math.clamp(Globals.lightBrightness, .25, 1))
+            self.settings.value.background.color *
+            rgbm(1, 1, 1, startupStages[1] * math.clamp(Globals.lightBrightness, .25, 1))
         )
 
-        local hardRedlineOffset = self.settings.redline.hard.offset
-        if not FocusedCar.headlightsActive then
-            hardRedlineOffset = self.settings.redline.soft.offset
-        end
+        local hardRedlineOffset = self.settings.redline.hard.offset * Globals.lightSwitchMod
 
         -- hard redline
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin + self.settings.valueRange.span,
             -self.settings.valueRange.span * ((maxValue - FocusedCar.rpmLimiter) / maxValue) *
-            stages[4],
+            startupStages[4],
             self.settings.radius + self.settings.redline.hard.width / 2 + hardRedlineOffset,
-            { self.settings.redline.hard.pinLengths[1] * stages[4], self.settings.redline.hard.pinLengths[2] * stages[5] },
+            { self.settings.redline.hard.pinLengths[1] * startupStages[4], self.settings.redline.hard.pinLengths[2] *
+            startupStages[5] },
             self.settings.redline.hard.width,
-            self.settings.redline.hard.color * rgbm(1, 1, 1, Globals.lightBrightness * stages[3])
+            self.settings.redline.hard.color * rgbm(1, 1, 1, Globals.lightBrightness * startupStages[3])
         )
 
         -- Soft redline
-        if FocusedCar.headlightsActive then
+        if self.settings.redline.soft.enabled then
             draw.DrawArc(
                 windowCenter,
                 self.settings.valueRange.begin + self.settings.valueRange.span,
                 -self.settings.valueRange.span *
                 (maxValue - FocusedCar.rpmLimiter + self.settings.redline.soft.rpms) / maxValue *
-                stages[4],
+                startupStages[4] * Globals.lightSwitchMod,
                 self.settings.radius + self.settings.redline.soft.width / 2 + self.settings.redline.soft.offset,
-                { self.settings.redline.soft.pinLengths[1] * stages[4], self.settings.redline.soft.pinLengths[2] *
-                stages[4] },
+                { self.settings.redline.soft.pinLengths[1] * startupStages[4] * Globals.lightSwitchMod, self.settings
+                .redline.soft.pinLengths[2] *
+                startupStages[4] * Globals.lightSwitchMod },
                 self.settings.redline.soft.width,
-                self.settings.redline.soft.color * rgbm(1, 1, 1, Globals.lightBrightness * stages[3])
+                self.settings.redline.soft.color * rgbm(1, 1, 1, Globals.lightSwitchMod * startupStages[3])
             )
         end
 
@@ -475,20 +479,22 @@ local function Tacho()
             self.settings.value.gradient.color.r + softLimitRatio,
             self.settings.value.gradient.color.g - softLimitRatio,
             (self.settings.value.gradient.color.b - softLimitRatio),
-            Globals.lightBrightness
-        ) * stages[5]
+            1
+        ) * startupStages[5] * Globals.lightSwitchMod
 
         -- Value Gradient
-        if FocusedCar.headlightsActive then
+        if self.settings.value.gradient.enabled and Globals.lightSwitchMod > 0.01 then
             ui.beginPremultipliedAlphaTexture()
             ui.beginTextureShade(self.gradientCanvas)
             draw.DrawArc(
                 windowCenter,
                 self.settings.valueRange.begin,
                 self.settings.valueRange.span * gaugeValueRatio,
-                self.settings.radius * .5,
+                self.settings.radius - self.settings.value.gradient.width / 2 +
+                self.settings.value.gradient.width / 2 * (1 - Globals.lightSwitchMod),
                 { 0, 0 },
-                self.settings.radius,
+                (self.settings.radius - self.settings.value.gradient.width) -
+                (self.settings.radius - self.settings.value.gradient.width) * (1 - Globals.lightSwitchMod),
                 gradientColor,
                 false
             )
@@ -497,7 +503,7 @@ local function Tacho()
                 windowSize.x / 2 - self.settings.radius,
                 windowSize.x - (windowSize.x / 2 - self.settings.radius)
             )
-            ui.drawCircleFilled(windowCenter, self.settings.radius, rgbm(1, 1, 1, 0), Globals.numSegments)
+            -- ui.drawCircleFilled(windowCenter, self.settings.radius, rgbm(1, 1, 1, 0), Globals.numSegments)
             ui.endPremultipliedAlphaTexture()
         end
 
@@ -509,35 +515,33 @@ local function Tacho()
             self.settings.value.highlight.color.g - softLimitRatio,
             self.settings.value.highlight.color.b - softLimitRatio,
             self.settings.value.highlight.color.mult
-        ) * Globals.lightBrightness
+        ) * Globals.lightSwitchMod
         -- Value Highlight
         draw.DrawArc(
             windowCenter,
             self.settings.valueRange.begin,
-            self.settings.valueRange.span * gaugeValueRatio * stages[4],
-            self.settings.radius + self.settings.value.highlight.width / 2 + self.settings.value.highlight.offset,
+            self.settings.valueRange.span * gaugeValueRatio * startupStages[4],
+            self.settings.radius + self.settings.value.highlight.width / 2 +
+            self.settings.value.highlight.offset * Globals.lightSwitchMod,
             { 0, 0 },
             self.settings.value.highlight.width,
             highlightColor,
             false
         )
 
-        local needlePinLen = self.settings.value.pinLengths[2]
-        if not FocusedCar.headlightsActive then
-            needlePinLen = 0
-        end
-
         if self.settings.value.enabled then
             -- Value Needle
             draw.DrawArc(
                 windowCenter,
                 self.settings.valueRange.begin,
-                self.settings.valueRange.span * gaugeValueRatio * stages[4],
+                self.settings.valueRange.span * gaugeValueRatio * startupStages[4],
                 self.settings.radius + self.settings.value.width / 2 + self.settings.value.offset,
-                { self.settings.value.pinLengths[1] * stages[4], needlePinLen * stages[4] },
+                { self.settings.value.pinLengths[1] * startupStages[4] *
+                Globals.lightSwitchMod, self.settings.value.pinLengths[2] * startupStages[4] *
+                Globals.lightSwitchMod },
                 self.settings.value.width,
                 self.settings.value.color * math.clamp(Globals.lightBrightness, .75, 1) *
-                rgbm(1, 1, 1, stages[3])
+                rgbm(1, 1, 1, startupStages[3])
             )
         end
 
@@ -545,18 +549,19 @@ local function Tacho()
         ui.popDWriteFont()
     end
 
-    local function updateValues()
+    local function updateValues(dt)
         windowSize = ui.windowSize()
         windowCenter = windowSize / 2
 
-        gaugeValueRatio = FocusedCar.rpm / maxValue
-        softLimitRatio = (FocusedCar.rpm - FocusedCar.rpmLimiter + self.settings.redline.soft.rpms) /
+        currentRPM = FocusedCar.rpm
+        gaugeValueRatio = currentRPM / maxValue
+        softLimitRatio = (currentRPM - FocusedCar.rpmLimiter + self.settings.redline.soft.rpms) /
             self.settings.redline.soft.rpms
-        softLimitRatio = math.clamp(softLimitRatio * 2, 0, 1)
+        softLimitRatio = math.clamp(softLimitRatio, 0, 1)
     end
 
     function self.window(dt)
-        stages = {
+        startupStages = {
             Globals.draw.startup.startupModifiers[1],
             Globals.draw.startup.startupModifiers[2],
             Globals.draw.startup.startupModifiers[3],
@@ -564,7 +569,7 @@ local function Tacho()
             Globals.draw.startup.startupModifiers[5]
         }
 
-        updateValues()
+        updateValues(dt)
 
         if ui.windowHovered() then
             ui.drawRect(vec2(0, 0),
@@ -577,6 +582,9 @@ local function Tacho()
         end
 
         DrawGauge()
+
+        ui.drawIcon(ui.Icons.Bulb, windowSize - 24, windowSize,
+            rgbm(1, 0, 0, 1 - Globals.lightBrightness))
 
         ac.setWindowSizeConstraints(
             "tacho",

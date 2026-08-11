@@ -218,13 +218,18 @@ local function Utils()
         ---@param width number
         ---@param brightness? number
         ---@param name? string Name for the gradient
+        ---@param scale? number
         ---@return ui.ExtraCanvas
         function draw.RadialGradient(
             resolution,
             width,
             brightness,
-            name
+            name,
+            scale
         )
+            if scale == nil then scale = 1 end
+            resolution = resolution * scale
+            width = width / 2 * scale
             local gradientCanvas = ui.ExtraCanvas(
                 resolution,
                 1,
@@ -237,17 +242,17 @@ local function Utils()
             local center = resolution / 2
 
             gradientCanvas:update(function()
-                local shades = 128
+                local shades = resolution
                 local shadeWidth = 1 / shades * width
                 local r = resolution / 2
                 local linearity = 2
                 for i = 0, shades, 1 do
-                    local alpha = (1 - i / shades) ^ linearity * brightness
+                    local alpha = (1 - i / shades) / linearity * brightness
                     ui.drawCircle(
                         center,
-                        r - (i / shadeWidth),
+                        r - (i * shadeWidth),
                         rgbm(1, 1, 1, alpha),
-                        self.numSegments,
+                        self.numSegments * scale,
                         shadeWidth
                     )
                 end

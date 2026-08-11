@@ -24,7 +24,7 @@ local function Tacho()
 
     self.settings = {
         radius = 100,
-        backgroundColor = rgbm(0, 0, 0, .1),
+        backgroundColor = rgbm(0, 0, 0, .125),
         valueRange = {
             begin = 90,
             span = 270
@@ -44,14 +44,15 @@ local function Tacho()
             },
             highlight = {
                 enabled = true,
-                color = rgbm(.5, 0, 1, 1),
+                color = rgbm(.5, .25, .75, 1),
                 offset = -3,
                 width = 3
             },
             gradient = {
                 enabled = true,
-                width = 50,
-                color = rgbm(.5, 0, 1, .5)
+                width = 32,
+                assetScale = 5.12,
+                color = rgbm(.5, .25, .75, .5)
             }
         },
         redline = {
@@ -86,10 +87,11 @@ local function Tacho()
     local draw = Globals.draw
 
     self.gradientCanvas = draw.RadialGradient(
-        self.settings.radius * 4,
-        self.settings.value.gradient.width * 4,
+        self.settings.radius,
+        self.settings.value.gradient.width,
         self.settings.value.gradient.color.mult,
-        "Tacho Gradient"
+        "Tacho Gradient",
+        self.settings.value.gradient.assetScale
     )
 
 
@@ -430,18 +432,21 @@ local function Tacho()
         DrawFuel()
 
         -- Range background
-        draw.DrawArc(
-            windowCenter,
-            self.settings.valueRange.begin,
-            self.settings.valueRange.span * startupStages[2],
-            (self.settings.radius + self.settings.value.background.width / 2) * startupStages[1],
-            { self.settings.value.background.pinLengths[1] * startupStages[1], self.settings.value.background.pinLengths
-            [2] *
-            startupStages[2] },
-            self.settings.value.background.width,
-            self.settings.value.background.color *
-            rgbm(1, 1, 1, startupStages[1] * math.clamp(Globals.lightBrightness, .25, 1))
-        )
+        if self.settings.value.background.enabled then
+            draw.DrawArc(
+                windowCenter,
+                self.settings.valueRange.begin,
+                self.settings.valueRange.span * startupStages[2],
+                (self.settings.radius + self.settings.value.background.width / 2) * startupStages[1],
+                { self.settings.value.background.pinLengths[1] * startupStages[1], self.settings.value.background
+                .pinLengths
+                [2] *
+                startupStages[2] },
+                self.settings.value.background.width,
+                self.settings.value.background.color *
+                rgbm(1, 1, 1, startupStages[1] * math.clamp(Globals.lightBrightness, .25, 1))
+            )
+        end
 
         local hardRedlineOffset = self.settings.redline.hard.offset * Globals.lightSwitchMod
 
@@ -493,15 +498,17 @@ local function Tacho()
                 self.settings.radius - self.settings.value.gradient.width / 2 +
                 self.settings.value.gradient.width / 2 * (1 - Globals.lightSwitchMod),
                 { 0, 0 },
-                (self.settings.radius - self.settings.value.gradient.width) -
-                (self.settings.radius - self.settings.value.gradient.width) * (1 - Globals.lightSwitchMod),
+                self.settings.value.gradient.width -
+                self.settings.value.gradient.width * (1 - Globals.lightSwitchMod),
                 gradientColor,
                 false
             )
+            -- ui.drawRectFilled(windowSize.x / 2 - self.settings.radius,
+            --     windowSize.y - (windowSize.y / 2 - self.settings.radius), rgbm(1, 1, 1, 1))
             ui.endTextureShade(
             -- Account for outside padding
                 windowSize.x / 2 - self.settings.radius,
-                windowSize.x - (windowSize.x / 2 - self.settings.radius)
+                windowSize.y - (windowSize.y / 2 - self.settings.radius)
             )
             -- ui.drawCircleFilled(windowCenter, self.settings.radius, rgbm(1, 1, 1, 0), Globals.numSegments)
             ui.endPremultipliedAlphaTexture()
@@ -510,24 +517,26 @@ local function Tacho()
 
         DrawRevNums()
 
-        local highlightColor = rgbm(
-            self.settings.value.highlight.color.r + softLimitRatio,
-            self.settings.value.highlight.color.g - softLimitRatio,
-            self.settings.value.highlight.color.b - softLimitRatio,
-            self.settings.value.highlight.color.mult
-        ) * Globals.lightSwitchMod
-        -- Value Highlight
-        draw.DrawArc(
-            windowCenter,
-            self.settings.valueRange.begin,
-            self.settings.valueRange.span * gaugeValueRatio * startupStages[4],
-            self.settings.radius + self.settings.value.highlight.width / 2 +
-            self.settings.value.highlight.offset * Globals.lightSwitchMod,
-            { 0, 0 },
-            self.settings.value.highlight.width,
-            highlightColor,
-            false
-        )
+        if self.settings.value.highlight.enabled then
+            local highlightColor = rgbm(
+                self.settings.value.highlight.color.r + softLimitRatio,
+                self.settings.value.highlight.color.g - softLimitRatio,
+                self.settings.value.highlight.color.b - softLimitRatio,
+                self.settings.value.highlight.color.mult
+            ) * Globals.lightSwitchMod
+            -- Value Highlight
+            draw.DrawArc(
+                windowCenter,
+                self.settings.valueRange.begin,
+                self.settings.valueRange.span * gaugeValueRatio * startupStages[4],
+                self.settings.radius + self.settings.value.highlight.width / 2 +
+                self.settings.value.highlight.offset * Globals.lightSwitchMod,
+                { 0, 0 },
+                self.settings.value.highlight.width,
+                highlightColor,
+                false
+            )
+        end
 
         if self.settings.value.enabled then
             -- Value Needle
@@ -569,6 +578,7 @@ local function Tacho()
             Globals.draw.startup.startupModifiers[5]
         }
 
+        ui.forceSimplifiedComposition(true) -- Gets rid of the blurry background
         updateValues(dt)
 
         if ui.windowHovered() then
@@ -607,17 +617,13 @@ local function Tacho()
 
                 ui.newLine()
 
-                ui.colorButton("Background color", self.settings.backgroundColor)
+                ui.colorButton("Background color", self.settings.backgroundColor,
+                    bit.bor(ui.ColorPickerFlags.PickerHueBar, ui.ColorPickerFlags.AlphaPreviewHalf,
+                        ui.ColorPickerFlags.Float, ui.ColorPickerFlags.AlphaBar))
                 ui.sameLine()
-                ui.treeNode("Background color###backgroundColor",
-                    ui.TreeNodeFlags.CollapsingHeader,
-                    function()
-                        ui.colorPicker("##backgroundColorPicker", self.settings.backgroundColor,
-                            ui.ColorPickerFlags.AlphaPreviewHalf + ui.ColorPickerFlags.AlphaBar)
-                    end
-                )
+                ui.text("Background color (click)")
             end)
-            ui.tabItem("Current RPM", function()
+            ui.tabItem("Current value", function()
                 ui.tabBar("tachoValue", function()
                     ui.tabItem("Needle", function()
                         if ui.checkbox("Enabled", self.settings.value.enabled) then
@@ -631,7 +637,7 @@ local function Tacho()
                         self.settings.value.offset = ui.slider("##offset", self.settings.value.offset,
                             -self.settings.radius, self.settings.radius,
                             'Offset: %.0fpx')
-                        ui.treeNode("Pins", ui.TreeNodeFlags.CollapsingHeader,
+                        ui.treeNode("Pins",
                             function()
                                 self.settings.value.pinLengths[1] = ui.slider("##pin1",
                                     self.settings.value.pinLengths[1],
@@ -643,21 +649,21 @@ local function Tacho()
                                     'End pin: %.0fpx')
                             end)
 
-                        ui.colorButton("Color", self.settings.value.color)
+                        ui.colorButton("Color", self.settings.value.color,
+                            bit.bor(ui.ColorPickerFlags.PickerHueBar, ui.ColorPickerFlags.AlphaPreviewHalf,
+                                ui.ColorPickerFlags.Float, ui.ColorPickerFlags.AlphaBar))
                         ui.sameLine()
-                        ui.treeNode("Color###needleColor",
-                            ui.TreeNodeFlags.CollapsingHeader,
-                            function()
-                                ui.colorPicker("##needleColorPicker", self.settings.value.color,
-                                    ui.ColorPickerFlags.AlphaPreviewHalf + ui.ColorPickerFlags.AlphaBar)
-                            end
-                        )
+                        ui.text("Color (click)")
                     end)
                     ui.tabItem("Background", function()
+                        if ui.checkbox("Enabled", self.settings.value.background.enabled) then
+                            self.settings.value.background.enabled = not self.settings.value.background.enabled
+                        end
+                        if not self.settings.value.background.enabled then return end
                         self.settings.value.background.width = ui.slider("##width", self.settings.value.background.width,
                             1, 16,
                             'Width: %.0fpx')
-                        ui.treeNode("Pins###pinsBackground", ui.TreeNodeFlags.CollapsingHeader,
+                        ui.treeNode("Pins###pinsBackground",
                             function()
                                 self.settings.value.background.pinLengths[1] = ui.slider("##pin1",
                                     self.settings.value.background.pinLengths[1],
@@ -668,15 +674,58 @@ local function Tacho()
                                     -self.settings.radius, self.settings.radius,
                                     'End pin: %.0fpx')
                             end)
-                        ui.colorButton("Color", self.settings.value.background.color)
+                        ui.colorButton("Color", self.settings.value.background.color,
+                            bit.bor(ui.ColorPickerFlags.PickerHueBar, ui.ColorPickerFlags.AlphaPreviewHalf,
+                                ui.ColorPickerFlags.Float, ui.ColorPickerFlags.AlphaBar))
                         ui.sameLine()
-                        ui.treeNode("Color###needleBackgroundColor",
-                            ui.TreeNodeFlags.CollapsingHeader,
-                            function()
-                                ui.colorPicker("##needleColorBackgroundPicker", self.settings.value.background.color,
-                                    ui.ColorPickerFlags.AlphaPreviewHalf + ui.ColorPickerFlags.AlphaBar)
-                            end
-                        )
+                        ui.text("Color (click)")
+                    end)
+                    ui.tabItem("Highlight", function()
+                        if ui.checkbox("Enabled", self.settings.value.highlight.enabled) then
+                            self.settings.value.highlight.enabled = not self.settings.value.highlight.enabled
+                        end
+                        if not self.settings.value.highlight.enabled then return end
+                        self.settings.value.highlight.width = ui.slider("##width",
+                            self.settings.value.highlight.width,
+                            1, 16,
+                            'Width: %.0fpx')
+
+                        self.settings.value.highlight.offset = ui.slider("##offset", self.settings.value.highlight
+                            .offset,
+                            -self.settings.radius, self.settings.radius,
+                            'Offset: %.0fpx')
+
+                        ui.colorButton("Color", self.settings.value.highlight.color,
+                            bit.bor(ui.ColorPickerFlags.PickerHueBar, ui.ColorPickerFlags.AlphaPreviewHalf,
+                                ui.ColorPickerFlags.Float, ui.ColorPickerFlags.AlphaBar))
+                        ui.sameLine()
+                        ui.text("Color (click)")
+                    end)
+                    ui.tabItem("Gradient", function()
+                        if ui.checkbox("Enabled", self.settings.value.gradient.enabled) then
+                            self.settings.value.gradient.enabled = not self.settings.value.gradient.enabled
+                        end
+                        if not self.settings.value.gradient.enabled then return end
+                        local widthChanged = false
+                        self.settings.value.gradient.width, widthChanged = ui.slider("##width",
+                            self.settings.value.gradient.width,
+                            1, self.settings.radius,
+                            'Width: %.0fpx')
+                        if widthChanged then
+                            self.gradientCanvas = draw.RadialGradient(
+                                self.settings.radius,
+                                self.settings.value.gradient.width,
+                                self.settings.value.gradient.color.mult,
+                                "Tacho Gradient",
+                                self.settings.value.gradient.assetScale
+                            )
+                        end
+
+                        ui.colorButton("Color", self.settings.value.gradient.color,
+                            bit.bor(ui.ColorPickerFlags.PickerHueBar, ui.ColorPickerFlags.AlphaPreviewHalf,
+                                ui.ColorPickerFlags.Float))
+                        ui.sameLine()
+                        ui.text("Color (click)")
                     end)
                 end)
             end)

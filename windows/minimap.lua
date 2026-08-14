@@ -10,7 +10,7 @@ local function Minimap()
     local trackData
     local trackCanvas
     local splineCanvas
-    local mapCentredCanvas
+    local mapFinalCanvas
     local displayZoom = .75
     local carScale = 1.75
     local focusedCarScale = 2
@@ -44,10 +44,12 @@ local function Minimap()
 
     local function GenerateTrackCanvas(data)
         local canvas = ui.ExtraCanvas(data.maxSize)
-        canvas:setName("Track")
         canvas:update(function(dt)
             ui.drawImage(data.image_path, 0, data.size)
         end)
+
+        canvas:setName("Track" ..
+            " (" .. math.round(canvas:memoryFootprint() / 1024 / 1024, 0) .. "MB)")
         return canvas
     end
 
@@ -55,7 +57,7 @@ local function Minimap()
         local res = trackData.maxSize * trackData.config.SCALE_FACTOR * splineResolutionMultiplier
         local detail = 1000
         local canvas = ui.ExtraCanvas(res)
-        canvas:setName("AI Spline")
+
         canvas:update(function(dt)
             for i = 1, detail, 1 do
                 local pos3 = ac.trackProgressToWorldCoordinate(i / detail, true)
@@ -71,6 +73,8 @@ local function Minimap()
             end
             ui.pathStroke(rgbm(1, 1, 1, 1), false, trackData.config.DRAWING_SIZE * splineResolutionMultiplier)
         end)
+        canvas:setName("AI Spline" ..
+            " (" .. math.round(canvas:memoryFootprint() / 1024 / 1024, 0) .. "MB)")
         return canvas
     end
 
@@ -96,7 +100,7 @@ local function Minimap()
             color = rgbm(0, 1, 1, 1)
         end
         if car.isUserControlled then
-            color = rgbm(1, 0, 1, 1)
+            color = rgbm(.75, .25, 1, 1)
         end
 
         ui.beginOutline()
@@ -122,7 +126,7 @@ local function Minimap()
         ui.endPivotRotation(focusedCarCamRotation - 90, carPos)
     end
 
-    local function DrawMapCentred()
+    local function DrawMapFinal()
         local windowCenter = ui.windowSize() / 2
 
         local playerMapPos = vec2(FocusedCar.position.x, FocusedCar.position.z) + trackData.offset
@@ -159,13 +163,14 @@ local function Minimap()
     function self.window(dt)
         local windowCenter = ui.windowSize() / 2
 
-        if mapCentredCanvas == nil then
-            mapCentredCanvas = ui.ExtraCanvas(windowCenter * 2 * 2)
-            mapCentredCanvas:setName("Map Centred")
+        if mapFinalCanvas == nil then
+            mapFinalCanvas = ui.ExtraCanvas(windowCenter * 2 * 2)
         end
 
-        mapCentredCanvas:clear()
-        mapCentredCanvas:update(DrawMapCentred)
+        mapFinalCanvas:clear()
+        mapFinalCanvas:update(DrawMapFinal)
+        mapFinalCanvas:setName("Minimap final" ..
+            " (" .. math.round(mapFinalCanvas:memoryFootprint() / 1024 / 1024, 0) .. "MB)")
 
         Globals.draw.RectBackground(
             4,
@@ -182,11 +187,11 @@ local function Minimap()
             4
         )
 
-        ui.beginTextureShade(mapCentredCanvas)
+        ui.beginTextureShade(mapFinalCanvas)
         ui.drawRectFilled(
             4,
             windowCenter * 2 - 4,
-            rgbm(1, 1, 1, 1 * Globals.lightBrightness),
+            rgbm(1, 1, 1, 1) * Globals.lightBrightness,
             5
         )
         ui.endTextureShade(0, windowCenter * 2)

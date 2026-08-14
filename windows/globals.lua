@@ -13,7 +13,7 @@ local function Utils()
     self.lightBrightness = 0.1
     --Interpolated like lightBrightness but is not dependant on sun angle
     self.lightSwitchMod = 0
-    self.lightSwitchModLerp = .025
+    self.lightSwitchModLerp = .05
 
     ---Class for drawing gauges
     local function Draw()
@@ -245,7 +245,7 @@ local function Utils()
                 local shades = resolution
                 local shadeWidth = 1 / shades * width
                 local r = resolution / 2
-                local linearity = 2
+                local linearity = 3
                 for i = 0, shades, 1 do
                     local alpha = (1 - i / shades) / linearity * brightness
                     ui.drawCircle(
@@ -259,7 +259,8 @@ local function Utils()
             end
             )
             if name ~= nil then
-                gradientCanvas:setName(name)
+                gradientCanvas:setName(name ..
+                    " (" .. math.round(gradientCanvas:memoryFootprint() / 1024 / 1024, 0) .. "MB)")
             end
 
             return gradientCanvas
@@ -298,7 +299,8 @@ local function Utils()
             end
             )
             if name ~= nil then
-                gradientCanvas:setName(name)
+                gradientCanvas:setName(name ..
+                    " (" .. math.round(gradientCanvas:memoryFootprint() / 1024 / 1024, 0) .. "MB)")
             end
 
             return gradientCanvas
@@ -337,7 +339,8 @@ local function Utils()
             end
             )
             if name ~= nil then
-                gradientCanvas:setName(name)
+                gradientCanvas:setName(name ..
+                    " (" .. math.round(gradientCanvas:memoryFootprint() / 1024 / 1024, 0) .. "MB)")
             end
 
             return gradientCanvas
@@ -349,7 +352,7 @@ local function Utils()
     self.draw = Draw()
 
     self.draw.horizontalGradient = self.draw.HorizontalGradient(512, 1, "Horizontal Gradient")
-    self.draw.verticalGradient = self.draw.VerticalGradient(1024, 1, "Vertical Gradient")
+    self.draw.verticalGradient = self.draw.VerticalGradient(512, 1, "Vertical Gradient")
 
     function self.update(dt)
         self.draw._handleStartup(dt)
@@ -365,7 +368,7 @@ local function Utils()
             self.lightBrightness = math.lerp(self.lightBrightness, 1, self.lightSwitchModLerp)
         else
             self.lightBrightness = math.lerp(self.lightBrightness, sunBrightnessMod, self.lightSwitchModLerp)
-            self.lightSwitchMod = math.lerp(self.lightSwitchMod, 0, self.lightSwitchModLerp)
+            self.lightSwitchMod = math.lerp(self.lightSwitchMod, 10 ^ -10, self.lightSwitchModLerp)
         end
         ac.debug("Light Switch modifier", self.lightSwitchMod)
     end

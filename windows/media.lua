@@ -55,7 +55,7 @@ local function Media()
                 ((windowCenter.x * 2 - windowCenter.y * 2)),
                 0
             ),
-            rgbm(1, 0, 1, 1) * Globals.lightBrightness
+            rgbm(.5, .25, .75, .5) * Globals.lightBrightness
         )
         ui.endTextureShade(
             vec2(windowCenter.y * 2, 0),
@@ -85,7 +85,7 @@ local function Media()
                 (currentlyPlaying.trackPosition / currentlyPlaying.trackDuration) *
                 Globals.draw.startup.startupModifiers[3] *
                 (windowCenter.x * 2 - windowCenter.y * 2), 0),
-            rgbm(1, 0, 1, 1 * Globals.lightBrightness)
+            rgbm(.5, .25, .75, 1) * Globals.lightBrightness
         )
 
         -- Text

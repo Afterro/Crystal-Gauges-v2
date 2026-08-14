@@ -94,6 +94,9 @@ local function Tacho()
         self.settings.value.gradient.assetScale
     )
 
+    self.revNumbersCanvasScale = 2
+    self.revNumbersCanvas = nil
+
 
     local function DrawSpeedAndGear()
         local textColor = rgbm(1, 1, 1, Globals.lightBrightness * startupStages[4])
@@ -148,37 +151,42 @@ local function Tacho()
         )
     end
 
-    local function DrawRevNums()
-        ui.pushDWriteFont(
-            "Comfortaa Light:assets/fonts/Comfortaa-VariableFont_wght.ttf;Weight=600;Style=Italic")
-
-        local step = 1
-        if gaugeMaxDisplayValue % 10 == 0 then
-            step = gaugeMaxDisplayValue / 10
+    local function UpdateRevNumsCanvas()
+        if self.revNumbersCanvas == nil then
+            self.revNumbersCanvas = ui.ExtraCanvas(windowSize * self.revNumbersCanvasScale)
         end
-
-        for i = 0, gaugeMaxDisplayValue, step do
-            local pos = vec2(
-                    math.cos(math.rad(90 + self.settings.valueRange.begin +
-                        (self.settings.valueRange.span / gaugeMaxDisplayValue) *
-                        i)),
-                    math.sin(math.rad(90 + self.settings.valueRange.begin +
-                        (self.settings.valueRange.span / gaugeMaxDisplayValue) *
-                        i))
-                ) * (self.settings.radius - self.settings.revNumbers.offset) * math.clamp(startupStages[3] + .5, 0, 1) +
-                windowCenter
-
-            draw.DrawText(pos, stringify(i), self.settings.revNumbers.size,
-                self.settings.revNumbers.color * rgbm(1, 1, 1, startupStages[3] * Globals.lightBrightness))
-
-            ui.glowCircleFilled(
-                pos,
-                self.settings.revNumbers.size / 2,
-                rgbm(1, 1, 1, 1) * rgbm(1, 1, 1, startupStages[3] * Globals.lightSwitchMod)
+        self.revNumbersCanvas:update(function(dt)
+            ui.pushDWriteFont(
+                ui.DWriteFont("Comfortaa Light", "assets/fonts/Comfortaa-VariableFont_wght.ttf")
+                :weight(600)
+                :style(ui.DWriteFont.Style.Italic)
             )
-        end
 
-        ui.popDWriteFont()
+            local step = 1
+            if gaugeMaxDisplayValue % 10 == 0 then
+                step = gaugeMaxDisplayValue / 10
+            end
+
+            for i = 0, gaugeMaxDisplayValue, step do
+                local pos = vec2(
+                        math.cos(math.rad(90 + self.settings.valueRange.begin +
+                            (self.settings.valueRange.span / gaugeMaxDisplayValue) *
+                            i)),
+                        math.sin(math.rad(90 + self.settings.valueRange.begin +
+                            (self.settings.valueRange.span / gaugeMaxDisplayValue) *
+                            i))
+                    ) * (self.settings.radius - self.settings.revNumbers.offset) * self.revNumbersCanvasScale +
+                    windowCenter * self.revNumbersCanvasScale
+
+                draw.DrawText(pos, stringify(i), self.settings.revNumbers.size * self.revNumbersCanvasScale,
+                    self.settings.revNumbers.color) -- * rgbm(1, 1, 1, startupStages[3] * Globals.lightBrightness)
+            end
+
+            ui.popDWriteFont()
+        end)
+
+        self.revNumbersCanvas:setName("Rev Numbers" ..
+            " (" .. math.round(self.revNumbersCanvas:memoryFootprint() / 1024 / 1024, 0) .. "MB)")
     end
 
     -- TODO:
@@ -514,8 +522,15 @@ local function Tacho()
             ui.endPremultipliedAlphaTexture()
         end
 
+        if self.revNumbersCanvas == nil then
+            UpdateRevNumsCanvas()
+        end
 
-        DrawRevNums()
+        ui.beginPremultipliedAlphaTexture()
+        ui.beginTextureShade(self.revNumbersCanvas)
+        ui.drawRectFilled(0, windowSize, rgbm(1, 1, 1, 1) * startupStages[3] * Globals.lightBrightness)
+        ui.endTextureShade(0, windowSize)
+        ui.endPremultipliedAlphaTexture()
 
         if self.settings.value.highlight.enabled then
             local highlightColor = rgbm(
@@ -610,10 +625,21 @@ local function Tacho()
 
                 ui.newLine()
 
+                local changed = false
                 self.settings.valueRange.begin = ui.slider("##from", self.settings.valueRange.begin, -180, 180,
                     'From: %.0fdeg')
+                if ui.itemEdited() then
+                    changed = true
+                end
                 self.settings.valueRange.span = ui.slider("##span", self.settings.valueRange.span, -360, 360,
                     'Span: %.0fdeg')
+                if ui.itemEdited() then
+                    changed = true
+                end
+
+                if changed then
+                    UpdateRevNumsCanvas()
+                end
 
                 ui.newLine()
 
